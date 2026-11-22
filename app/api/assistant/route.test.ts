@@ -168,7 +168,8 @@ describe("POST /api/assistant", () => {
     expect(payload.responseMode).toBe("standard_guidance");
     expect(payload.provider).toBe("AIRWISE rules");
     expect(payload.advice.summary).toContain("not AI-generated advice");
-    expect(payload.advice.recommendations).toHaveLength(3);
+    expect(payload.advice.recommendations).toHaveLength(4);
+    expect(payload.advice.recommendations.some((item: { action: string }) => item.action.includes("evening"))).toBe(true);
     expect(JSON.stringify(payload)).not.toContain("stack");
   });
 

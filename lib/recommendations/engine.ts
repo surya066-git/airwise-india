@@ -172,6 +172,25 @@ export function buildRecommendations(
       guidanceType: selectedPreferences.includes("commute") ? "personalized" : "general",
       personalizedBy: selectedPreferences.filter((key) => key === "commute"),
       conditionalOn: []
+    },
+    {
+      action: "Check the latest official reading before evening plans",
+      reason: liveAqi
+        ? "The official station reports " + official.category + ". Use it as a local snapshot before evening outdoor activity; conditions can differ across the city."
+        : "A current official AQI is not available, so AIRWISE cannot verify conditions for an evening activity.",
+      intendedProfile: locationLabel ? "Residents in " + locationLabel : "Residents and households",
+      expectedBenefit: "Helps keep evening activity decisions connected to a recent official reading instead of an estimate.",
+      practicalSteps: [
+        "Refresh AIRWISE or check the CPCB source before an outdoor evening activity.",
+        "If a current reading is unavailable or stale, treat conditions as unknown and keep an indoor option."
+      ],
+      environmentalImpact: null,
+      basis: liveAqi
+        ? ["current_official_aqi", ...(air?.location.label ? ["selected_location" as const] : [])]
+        : ["general_guidance"],
+      guidanceType: "general",
+      personalizedBy: [],
+      conditionalOn: []
     }
   ];
 

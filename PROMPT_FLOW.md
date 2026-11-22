@@ -563,3 +563,27 @@ The AI assistant was used to turn the provided product brief into a runnable Nex
 - GitHub CLI authentication and private repository access were verified. `main` is the default branch and the pushed commit was confirmed against the remote. No environment credentials or `.env.local` files are in Git history.
 - Vercel CLI is not installed, there is no linked Vercel project, and no Vercel dashboard deployment could be performed from this workspace. No Production variables, generated URL, deployment logs, homepage, static assets, or production health response were verified.
 - No production AI generation, external AQI request, Vercel deployment, or deployment-triggering action was performed. The exact next action is to import the private GitHub repository in the Vercel dashboard, configure Production variables there, and deploy. After a deployment exists, verify the homepage and `/api/health/providers`; obtain separate explicit approval before any production Cloudflare generation.
+
+## Prompt iteration 20 — premium product interface redesign
+
+### Human direction and decisions
+
+- The user requested a premium, readable, responsive redesign of the existing AIRWISE application and explicitly asked to preserve working APIs, provenance rules, recommendation validation, and provider behavior. The user also asked for screenshots at 390×844, 768×1024, and 1440×900, a design system document, and local quality checks. No push or deployment was authorized.
+- The supplied design brief set the forest-green/warm-neutral palette, editorial hierarchy, clearer unavailable AQI state, larger reading sizes, responsive navigation, daily routine planning, indoor-air guidance, and keyboard accessibility. No user research, external design study, or measured usability evaluation was conducted.
+
+### AI-generated implementation
+
+- Reorganized the existing dashboard into a location-aware editorial hero, official CPCB AQI panel, contextual insight/preferences panel, pollutant observations, daily plan, indoor coach, separate OpenAQ readings, assistant, and footer. The official AQI panel keeps a non-numeric unavailable state, source attribution, and location/refresh actions; no gauge or synthetic measurement was added.
+- Reworked pollutant observations into a responsive six-item grid, retaining raw-value labels, units, timestamps, freshness, and source separation. OpenAQ remains supplementary and is not merged with CPCB AQI.
+- Preserved the deterministic recommendation engine's existing guidance and added one general evening-planning reminder that uses an official category only when the existing live verified data state supplies it. When AQI is unavailable or stale it explicitly says conditions cannot be verified. The plan now presents morning/outdoor, commute, workday/indoor, and evening contexts. Preference evidence and personalized/general/conditional labels remain attached to their validated recommendations.
+- Restyled the assistant and recommendation cards for more readable explanations, practical steps, preference evidence, benefit, and expandable basis. Provider attribution behavior and API request/response behavior were not changed.
+- Added responsive mobile navigation and a shared dialog-focus hook for keyboard trapping, Escape dismissal, and focus restoration. Added semantic dialog descriptions, visible focus styling, reduced-motion support, and a contrast adjustment for secondary metadata. No package dependency or external font request was added.
+- Added `DESIGN_SYSTEM.md` with design rationale, palette, typography, component conventions, breakpoints, and accessibility choices. Updated README to link the design system and summarize provenance-aware presentation.
+
+### Visual and automated verification
+
+- Captured the unavailable-data dashboard at 390×844, 768×1024, and 1440×900 using Playwright API fixtures. These screenshots are visual QA fixtures only and do not represent live AQI, OpenAQ, or AI responses. Manual review checked hierarchy, copy size, spacing, nav proportions, card density, empty states, dialog behavior, and horizontal overflow.
+- The visible Next.js development indicator in local screenshots is framework tooling and is not part of the AIRWISE page.
+- Final verification passed: `npm run typecheck`, `npm run lint`, `npm test` (17 files, 155 tests), `npm run build`, and `npm run test:e2e -- --workers=1` (51 tests across mobile, tablet, and desktop). The serial E2E run used the offline test server and mocked UI/API states; it did not call Cloudflare, Gemini, OpenRouter, Ollama, CPCB, or OpenAQ.
+- Playwright captured full-page and first-fold screenshots at 390×844, 768×1024, and 1440×900. The screens were manually inspected at all three sizes. The final planner order is morning/outdoor, commute, workday/indoors, then evening. The tests check responsive overflow, mobile navigation, keyboard dialog focus, source provenance, AI attribution/failure states, and the visual empty state.
+- `git diff --check` passes. No provider requests, GitHub push, commit, or Vercel deployment were made for this redesign. The production app was built locally; this does not verify a hosted deployment or live data/AI behavior.

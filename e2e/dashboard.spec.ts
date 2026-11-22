@@ -49,6 +49,13 @@ async function mockAir(page: Page, payload = airResponse()) {
   }));
 }
 
+async function openMobileMenuIfNeeded(page: Page) {
+  if ((page.viewportSize()?.width ?? 1024) <= 820) {
+    const toggle = page.getByRole("button", { name: "Open navigation" });
+    if (await toggle.isVisible()) await toggle.click();
+  }
+}
+
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.clear());
   await mockAir(page);
@@ -56,24 +63,66 @@ test.beforeEach(async ({ page }) => {
 
 test("homepage loads with accessible dashboard navigation", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Your day, in a clearer light." })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Make informed decisions about the air you breathe." })).toBeVisible();
+  await openMobileMenuIfNeeded(page);
+  const navigationName = (page.viewportSize()?.width ?? 1024) <= 820 ? "Mobile navigation" : "Main navigation";
+  await expect(page.getByRole("navigation", { name: navigationName })).toBeVisible();
   await expect(page.getByRole("button", { name: "Personalize" })).toBeVisible();
   await expect(page.getByText("General guidance", { exact: true }).first()).toBeVisible();
 });
 
+test("dashboard stays within the viewport and keeps body copy readable", async ({ page }) => {
+  await page.goto("/");
+  const measurements = await page.evaluate(() => ({
+    documentWidth: document.documentElement.scrollWidth,
+    viewportWidth: window.innerWidth,
+    bodyFontSize: Number.parseFloat(getComputedStyle(document.body).fontSize)
+  }));
+  expect(measurements.documentWidth).toBeLessThanOrEqual(measurements.viewportWidth);
+  expect(measurements.bodyFontSize).toBeGreaterThanOrEqual(16);
+});
+
+test("mobile navigation opens, follows a section, and closes accessibly", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  const mobileNavigation = page.getByRole("navigation", { name: "Mobile navigation" });
+  await expect(mobileNavigation).toBeVisible();
+  await mobileNavigation.getByRole("link", { name: "Your plan" }).click();
+  await expect(page).toHaveURL(/#recommendations$/);
+  await expect(page.getByRole("button", { name: "Open navigation" })).toBeVisible();
+});
+
+test("preference dialog traps keyboard focus and restores it on close", async ({ page }) => {
+  await page.goto("/");
+  await openMobileMenuIfNeeded(page);
+  const personalize = page.getByRole("button", { name: "Personalize" });
+  await personalize.click();
+  const dialog = page.getByRole("dialog", { name: "Make the advice fit" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Close preferences" })).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(dialog.getByRole("button", { name: "Skip for now" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(personalize).toBeFocused();
+});
+
 test("dashboard navigation reaches recommendations", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Your plan" }).click();
+  await openMobileMenuIfNeeded(page);
+  const navigationName = (page.viewportSize()?.width ?? 1024) <= 820 ? "Mobile navigation" : "Main navigation";
+  await page.getByRole("navigation", { name: navigationName }).getByRole("link", { name: "Your plan" }).click();
   await expect(page).toHaveURL(/#recommendations$/);
   await expect(page.locator("#recommendations")).toBeInViewport();
 });
 
 test("location search selects a city and requests that city", async ({ page }) => {
   await page.goto("/");
+  await openMobileMenuIfNeeded(page);
   const cityRequest = page.waitForRequest((request) =>
     request.url().includes("/api/aqi?") && new URL(request.url()).searchParams.get("city") === "Hyderabad");
-  await page.getByRole("button", { name: /Choose location/ }).click();
+  await page.getByRole("button", { name: /Choose an area/ }).click();
   await page.getByLabel("City or town").fill("Hyderabad");
   await page.getByRole("button", { name: "Use this location" }).click();
   await cityRequest;
@@ -103,7 +152,7 @@ test("stale OpenAQ measurements show historical status, timestamp, and age", asy
   await expect(page.getByText("Stale reading")).toBeVisible();
   await expect(page.getByText(/Stale historical/)).toBeVisible();
   await expect(page.getByText(/days ago/)).toBeVisible();
-  await expect(page.getByText("OpenAQ values are raw sensor observations.")).toBeVisible();
+  await expect(page.getByText("OpenAQ values are supplementary sensor observations. They are not official CPCB AQI.")).toBeVisible();
 });
 
 test("assistant response is shown after a successful mocked request", async ({ page }) => {
@@ -281,15 +330,18 @@ test("Cloudflare failure shows unavailable state, source limitation, and standar
 
 test("responsive controls remain in the viewport without horizontal overflow", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("button", { name: /Choose location/ })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Ask AIRWISE" })).toBeVisible();
+  await openMobileMenuIfNeeded(page);
+  const navigationName = (page.viewportSize()?.width ?? 1024) <= 820 ? "Mobile navigation" : "Main navigation";
+  await expect(page.getByRole("button", { name: /Choose an area/ })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: navigationName }).getByRole("link", { name: "Ask AIRWISE" })).toBeVisible();
   const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(hasOverflow).toBe(false);
 });
 
 test("location and assistant fields have accessible labels", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Choose location/ }).click();
+  await openMobileMenuIfNeeded(page);
+  await page.getByRole("button", { name: /Choose an area/ }).click();
   await expect(page.getByLabel("City or town")).toBeVisible();
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect(page.getByLabel("Ask AIRWISE INDIA")).toBeVisible();

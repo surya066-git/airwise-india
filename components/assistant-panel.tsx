@@ -146,25 +146,25 @@ export default function AssistantPanel({ location, preferences }: {
     document.getElementById("assistant-question")?.focus();
   }
 
-  return <section className="assistant-section" id="assistant">
+  return <section className="assistant-section" id="assistant" aria-labelledby="assistant-title">
     <div className="assistant-intro">
       <span className="assistant-orb"><Sparkles size={22} /></span>
       <div>
-        <div className="eyebrow"><span /> YOUR AIRWISE ASSISTANT</div>
-        <h2>Ask a clearer question.</h2>
-        <p>Answers use current server-retrieved data when available. If the source is missing, AIRWISE will say so.</p>
-        <div className="assistant-trust"><ShieldCheck size={15} />When configured, prompts and selected source context go to Cloudflare Workers AI, then Gemini or OpenRouter. Optional local Ollama is disabled by default and unavailable in production. If no cloud provider returns validated advice, AIRWISE uses standard rule-based guidance.</div>
+        <p className="eyebrow">Ask AIRWISE</p>
+        <h2 id="assistant-title">A thoughtful answer starts with context.</h2>
+        <p>Ask about a journey, a routine or the readings available for your area. AIRWISE separates verified measurements from general suggestions.</p>
+        <div className="assistant-trust"><ShieldCheck size={17} />Your selected preferences stay in this browser. Only the question and relevant selected context are sent to an AI provider when it returns validated advice.</div>
       </div>
     </div>
     <div className="chat-panel">
       <div className="chat-topline">
         <span className="assistant-avatar"><Wind size={17} /></span>
-        <div><strong>AIRWISE INDIA</strong><small>Air quality, with context</small></div>
-        <span className="chat-status"><i /> Ready</span>
+        <div><strong>AIRWISE India</strong><small>Local data when available · clear when it is missing</small></div>
+        <span className="chat-status"><i /> Ready when you are</span>
       </div>
-      <div className="chat-messages" role="log" aria-live="polite" aria-label="Assistant conversation">
+      <div className="chat-messages" role="log" aria-live="polite" aria-label="Assistant conversation" aria-busy={busy}>
         {messages.length === 0
-          ? <div className="assistant-welcome"><span><Sparkles size={15} /></span><p>Ask about a routine, commute, or location. I’ll distinguish verified data from general guidance.</p></div>
+          ? <div className="assistant-welcome"><span><Sparkles size={17} /></span><p>What would you like to plan? Try one of the questions below, or write your own. I’ll say when current data is unavailable.</p></div>
           : messages.map((message, index) => <div className={`chat-message message-${message.role}`} key={index}>
               {message.role === "assistant" && <span className="message-avatar"><Wind size={13} /></span>}
               <p>{message.content}</p>
@@ -195,15 +195,15 @@ export default function AssistantPanel({ location, preferences }: {
             </div>)}
         {busy && <div className="chat-message message-assistant"><span className="message-avatar"><Wind size={13} /></span><p className="typing">Checking available context…</p></div>}
       </div>
-      <div className="suggested-prompts">
-        {STARTERS.map((text) => <button key={text} onClick={() => setStarterQuestion(text)}>{text}<ArrowRight size={13} /></button>)}
+      <div className="suggested-prompts" aria-label="Suggested questions">
+        {STARTERS.map((text) => <button type="button" key={text} onClick={() => setStarterQuestion(text)}>{text}<ArrowRight size={15} /></button>)}
       </div>
       <form className="chat-form" onSubmit={(event) => void submit(event)}>
         <label className="sr-only" htmlFor="assistant-question">Ask AIRWISE INDIA</label>
-        <input id="assistant-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask about air quality or daily choices…" maxLength={1200} />
+        <input id="assistant-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask about your daily routine…" maxLength={1200} aria-describedby="assistant-disclaimer" />
         <button type="submit" aria-label="Send question" disabled={!question.trim() || busy}><Send size={17} /></button>
       </form>
-      <p className="chat-disclaimer">General information only. For urgent symptoms or medical concerns, contact a qualified health professional.</p>
+      <p className="chat-disclaimer" id="assistant-disclaimer">General information only; not medical advice. Current AQI is shown only when it is verified by the official source.</p>
     </div>
   </section>;
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { ArrowRight, LocateFixed, MapPin, X } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
+import { useDialogFocus } from "@/components/use-dialog-focus";
 
 export type LocationChoice = { city: string; latitude: number | null; longitude: number | null };
 
@@ -16,12 +17,8 @@ export default function LocationDialog({
   const [latitude, setLatitude] = useState(initial.latitude === null ? "" : String(initial.latitude));
   const [longitude, setLongitude] = useState(initial.longitude === null ? "" : String(initial.longitude));
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [onClose]);
+  const dialogRef = useRef<HTMLElement>(null);
+  useDialogFocus(dialogRef, onClose);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,12 +64,12 @@ export default function LocationDialog({
 
   return (
     <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section className="dialog-card" role="dialog" aria-modal="true" aria-labelledby="location-dialog-title">
+      <section ref={dialogRef} tabIndex={-1} className="dialog-card" role="dialog" aria-modal="true" aria-labelledby="location-dialog-title" aria-describedby="location-dialog-copy">
         <button className="dialog-close" aria-label="Close location settings" onClick={onClose}><X size={18} /></button>
         <span className="dialog-icon"><MapPin size={20} /></span>
-        <div className="eyebrow"><span /> LOCATION</div>
+        <div className="eyebrow"><span /> Location</div>
         <h2 id="location-dialog-title">Choose your area</h2>
-        <p className="dialog-copy">We request readings for this location only. If its station is missing, AIRWISE will say so rather than show another city&apos;s data.</p>
+        <p className="dialog-copy" id="location-dialog-copy">We request readings for this location only. If its station is missing, AIRWISE will say so rather than show another city&apos;s data.</p>
         <form className="dialog-form" onSubmit={submit}>
           <label htmlFor="city-name">City or town <small>Optional if you use coordinates only</small></label>
           <input id="city-name" value={city} onChange={(event) => setCity(event.target.value)} maxLength={100} placeholder="For example, Pune" />

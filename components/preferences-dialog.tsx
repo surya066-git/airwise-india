@@ -1,8 +1,9 @@
 "use client";
 
 import { ArrowRight, Check, Users, X } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { DEFAULT_PREFERENCES, type UserPreferences } from "@/types/preferences";
+import { useDialogFocus } from "@/components/use-dialog-focus";
 
 export default function PreferencesDialog({
   initial, onClose, onSave
@@ -12,12 +13,8 @@ export default function PreferencesDialog({
   onSave: (preferences: UserPreferences) => void;
 }) {
   const [value, setValue] = useState(initial);
-
-  useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [onClose]);
+  const dialogRef = useRef<HTMLElement>(null);
+  useDialogFocus(dialogRef, onClose);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,12 +28,12 @@ export default function PreferencesDialog({
 
   return (
     <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <section className="dialog-card profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-dialog-title">
+      <section ref={dialogRef} tabIndex={-1} className="dialog-card profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-dialog-title" aria-describedby="profile-dialog-copy">
         <button className="dialog-close" aria-label="Close preferences" onClick={onClose}><X size={18} /></button>
         <span className="dialog-icon profile-dialog-icon"><Users size={20} /></span>
-        <div className="eyebrow"><span /> OPTIONAL PERSONALIZATION</div>
+        <div className="eyebrow"><span /> Optional personalization</div>
         <h2 id="profile-dialog-title">Make the advice fit</h2>
-        <p className="dialog-copy">Share only what helps tailor everyday suggestions. Preferences stay in this browser and can be changed or cleared any time.</p>
+        <p className="dialog-copy" id="profile-dialog-copy">Share only what helps tailor everyday suggestions. Preferences stay in this browser and can be changed or cleared any time.</p>
         <form className="dialog-form" onSubmit={submit}>
           <div className="profile-fields">
             <label>Age group

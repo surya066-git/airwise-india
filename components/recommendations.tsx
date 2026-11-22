@@ -1,12 +1,8 @@
 "use client";
 
-import { ArrowRight, Check, Leaf, ShieldCheck, Wind } from "lucide-react";
-import { buildRecommendations } from "@/lib/recommendations/engine";
-import type { AirQualityResponse } from "@/types/air-quality";
-import type { UserPreferences } from "@/types/preferences";
+import { ArrowRight } from "lucide-react";
+import type { Recommendation } from "@/types/recommendation";
 
-const ICONS = [Wind, ShieldCheck, Leaf];
-const TONES = ["rec-green", "rec-blue", "rec-peach"];
 const BASIS_LABELS: Record<string, string> = {
   current_official_aqi: "Current official CPCB AQI",
   official_pollutant_observation: "CPCB pollutant observation",
@@ -27,33 +23,41 @@ const GUIDANCE_LABELS = {
 } as const;
 
 export default function RecommendationCards({
-  preferences, air, onAsk
+  recommendations, onAsk, startIndex = 0
 }: {
-  preferences: UserPreferences;
-  air: AirQualityResponse | null;
+  recommendations: Recommendation[];
   onAsk: (question: string) => void;
+  startIndex?: number;
 }) {
-  const items = buildRecommendations(air, preferences);
   return <div className="recommendation-grid">
-    {items.map((item, index) => {
-      const Icon = ICONS[index % ICONS.length];
+    {recommendations.map((item, index) => {
+      const context = item.action.toLowerCase().includes("evening")
+        ? "Evening · activity planning"
+        : item.action.toLowerCase().includes("outdoor")
+          ? "Morning · outdoor plans"
+          : "Commute · lower emissions";
       return <article className="recommendation-card" key={item.action}>
-        <div className="recommendation-top">
-          <span className={`rec-icon ${TONES[index % TONES.length]}`}><Icon size={18} /></span>
-          <span className="rec-label">{index === 0 ? "DAILY ROUTINE" : index === 1 ? "AT HOME" : "LOWER EMISSIONS"}</span>
-        </div>
-        <small className={`recommendation-guidance-type guidance-${item.guidanceType}`}>{GUIDANCE_LABELS[item.guidanceType]}</small>
+        <header className="recommendation-top">
+          <span className="rec-step" aria-hidden="true">{String(startIndex + index + 1).padStart(2, "0")}</span>
+          <div className="rec-context"><span className="rec-label">{context}</span>
+            <small className={`recommendation-guidance-type guidance-${item.guidanceType}`}>{GUIDANCE_LABELS[item.guidanceType]}</small>
+          </div>
+        </header>
         <h3>{item.action}</h3>
-        <p className="rec-why"><strong>Why it helps</strong>{item.reason}</p>
-        <div className="rec-detail"><span>Intended for</span><strong>{item.intendedProfile}</strong></div>
-        <div className="rec-detail"><span>Expected benefit</span><strong>{item.expectedBenefit}</strong></div>
-        <div className="rec-detail"><span>Practical steps</span><strong>{item.practicalSteps.join(" ")}</strong></div>
-        {item.personalizedBy.length > 0 && <div className="rec-detail"><span>Selected evidence</span><strong>{item.personalizedBy.map((key) => PREFERENCE_LABELS[key]).join(", ")}</strong></div>}
-        {item.conditionalOn.length > 0 && <div className="rec-detail"><span>Condition, if applicable</span><strong>{item.conditionalOn.map((key) => PREFERENCE_LABELS[key]).join(", ")}</strong></div>}
-        {item.environmentalImpact && <div className="rec-benefit"><Leaf size={15} /><span>{item.environmentalImpact}</span></div>}
-        <p className="rec-basis"><Check size={14} />Basis: {item.basis.map((basis) => BASIS_LABELS[basis]).join(" · ")}</p>
-        <button className="rec-action" onClick={() => onAsk("Explain this suggestion for my situation: " + item.action)}>
-          Ask about this step<ArrowRight size={15} />
+        <div className="rec-why"><strong>Why it may help</strong><p>{item.reason}</p></div>
+        <div className="rec-profile"><strong>Relevant for</strong><p>{item.intendedProfile}</p>
+          {item.personalizedBy.length > 0 && <small>Based on selected: {item.personalizedBy.map((key) => PREFERENCE_LABELS[key]).join(", ")}</small>}
+          {item.conditionalOn.length > 0 && <small>Only if relevant: {item.conditionalOn.map((key) => PREFERENCE_LABELS[key]).join(", ")}</small>}
+        </div>
+        <div className="rec-benefit"><strong>Expected benefit</strong><p>{item.expectedBenefit}</p></div>
+        <div className="rec-steps"><strong>Practical steps</strong><ol>{item.practicalSteps.map((step) => <li key={step}>{step}</li>)}</ol></div>
+        {item.environmentalImpact && <p className="rec-impact">{item.environmentalImpact}</p>}
+        <details className="rec-basis">
+          <summary>What informs this suggestion</summary>
+          <p>{item.basis.map((basis) => BASIS_LABELS[basis]).join(" · ")}</p>
+        </details>
+        <button type="button" className="rec-action" onClick={() => onAsk("Explain this suggestion for my situation: " + item.action)}>
+          Ask AIRWISE about this<ArrowRight size={16} />
         </button>
       </article>;
     })}

@@ -6,7 +6,7 @@ AIRWISE INDIA is a responsive air-quality assistant foundation for residents acr
 
 ## What is included
 
-- Responsive Next.js App Router dashboard with an accessible visual system.
+- Responsive Next.js App Router dashboard with a calm editorial visual system; see [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) for tokens, components, responsive rules, and accessibility decisions.
 - Location selection by city name, browser geolocation, or manual coordinates.
 - Optional local preferences for age group, routine, commute, outdoor activity, and household context. Preferences remain in the browser.
 - CPCB/data.gov.in station matching by normalized city and, when supplied, station coordinates within 50 km. AQI is displayed only if an explicit same-station, same-timestamp AQI field is returned.
@@ -18,6 +18,8 @@ AIRWISE INDIA is a responsive air-quality assistant foundation for residents acr
 - Structured recommendations based on live official AQI only when verified, live CPCB pollutant observations, location, and saved profile preferences.
 - Input validation, server-only credentials, timeouts, no-store responses, bounded request sizes, and basic per-instance rate limits.
 - Logic tests for CPCB AQI category boundaries and safe CPCB response parsing.
+
+The dashboard distinguishes verified CPCB AQI, raw CPCB pollutant observations, supplementary OpenAQ sensor measurements, standard recommendations, and validated AI answers. When an official AQI is missing, the interface says so and does not estimate one.
 
 ## Technology
 

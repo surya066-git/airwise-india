@@ -100,4 +100,19 @@ describe("structured recommendation engine", () => {
     expect(recommendations[0]?.basis).toContain("general_guidance");
     expect(recommendations[2]?.basis).toContain("general_guidance");
   });
+
+  it("keeps evening planning useful without presenting missing or stale AQI as current", () => {
+    const current = buildRecommendations(makeAir("live", 85), DEFAULT_PREFERENCES);
+    const unavailable = buildRecommendations(makeAir("unverified", null), DEFAULT_PREFERENCES);
+    const eveningCurrent = current.find((item) => item.action.includes("evening"));
+    const eveningUnavailable = unavailable.find((item) => item.action.includes("evening"));
+
+    expect(eveningCurrent?.basis).toContain("current_official_aqi");
+    expect(eveningCurrent?.reason).toContain("local snapshot");
+    expect(eveningUnavailable?.reason).toContain("cannot verify conditions");
+    expect(eveningUnavailable?.practicalSteps.join(" ")).toContain("treat conditions as unknown");
+    expect(eveningUnavailable?.guidanceType).toBe("general");
+    expect(eveningUnavailable?.personalizedBy).toEqual([]);
+    expect(recommendationSchema.safeParse(eveningUnavailable).success).toBe(true);
+  });
 });
