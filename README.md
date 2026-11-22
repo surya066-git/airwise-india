@@ -140,7 +140,7 @@ npm run build
 
 ## Deployment
 
-Follow [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for Vercel build settings, environment variables, security limitations, and the staged production smoke-test procedure. No production deployment or URL has been verified yet.
+The private GitHub repository is [surya066-git/airwise-india](https://github.com/surya066-git/airwise-india), with `main` as its default branch. Follow [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) to import it into Vercel, set environment variables, and run the staged production checks. Vercel is not connected yet, and no production URL has been verified.
 
 ## Current limitations
 
@@ -149,7 +149,7 @@ Follow [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for Vercel build settings,
 - CPCB pollutant values do not include units or averaging windows, so the published AQI method cannot be reproduced from this resource.
 - Gemini has not produced a response that passes application validation. Prompt 5's live A/B/C checks returned HTTP 503; the latest minimal-text request timed out, and Gemini returned HTTP 429 in the default OpenRouter full-route check.
 - Prompt 14's response failed AIRWISE semantic validation with `unsupported_personalization`; its text was not retained, so the exact claim is unknown. Prompt 16 then made one Cloudflare-only assistant request through the UI with the selected Hyderabad public-transit preference. Cloudflare and AIRWISE both returned HTTP 200, structured and semantic validation passed, and the frontend showed the actual personalized recommendation with Cloudflare attribution and the AQI limitation notice. CPCB/OpenAQ were not queried; no other provider or retry was used. This verifies one live dev-mode result, not production deployment behavior.
-- No Vercel project is linked in this workspace: `.git` metadata, `.vercel/project.json`, and the Vercel CLI are absent. Production environment variables could not be checked and no deployment URL exists.
+- The repository is private and pushed to GitHub, but no Vercel project is linked; `.vercel/project.json` and the Vercel CLI are absent. Production environment variables could not be checked and no deployment URL exists.
 - The optional Ollama adapter is disabled by default and unavailable in production. Its development-only mock tests do not require a local model.
 - Earlier OpenRouter attempts did not produce an accepted answer and the OpenRouter key was pasted in chat. Rotate/revoke it before enabling the OpenRouter production fallback if that has not already been done. Prompt 16's validated live response used Cloudflare.
 - City-name matching uses exact case-insensitive matching against the returned `city` value; there is no geocoding or alias directory.

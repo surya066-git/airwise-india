@@ -541,3 +541,25 @@ The AI assistant was used to turn the provided product brief into a runnable Nex
 - `npm run test:e2e -- --workers=1`: passed, 39 browser tests across mobile, tablet, and desktop.
 - A local production-mode `GET /api/health/providers` returned HTTP 200 with safe metadata and `Cache-Control: no-store`; it made no external requests and did not consume AI quota.
 - No Vercel build/deployment, production-variable inspection, public URL verification, live data-source request, or production AI generation was performed. Prompt 16 remains evidence of a successful local development-mode Cloudflare response only. The production deployment and its runtime behavior remain unverified.
+
+## Prompt iteration 19 — GitHub audit and Vercel deployment handoff
+
+### Human decisions and safeguards
+
+- The user requested GitHub and Vercel connection, deployment verification, security review, and documentation. No production Cloudflare generation was authorized; no production AI request was made.
+- The existing GitHub repository is [surya066-git/airwise-india](https://github.com/surya066-git/airwise-india). At audit time it contained one commit on `main` (`c04b542`), and the remote `main` pointed to that same commit. The repository metadata unexpectedly reported `PUBLIC`; it was returned to `PRIVATE` to follow the earlier instruction not to create a public repository.
+- The reachable Git tree contained `.env.example` but no `.env.local` or other environment credential file. Configured API credential values were compared in memory against every committed blob; no values matched. A heuristic matched a synthetic Authorization-header string in `lib/ai/gemini.test.ts`, used by the test that verifies provider diagnostic redaction. No credential value was printed. The repository remains private.
+- The working tree had one uncommitted edit in `e2e-live/gemini.integration.spec.ts`; it was not included in this deployment documentation commit or pushed. Do not treat that dirty local file as part of the remote deployment revision.
+
+### Vercel status and AI-generated documentation
+
+- Vercel CLI, `.vercel/project.json`, and an existing Vercel project linkage are absent. Production environment variables and plan settings could not be inspected. The Vercel dashboard must import the existing private GitHub repository and receive explicit access to it.
+- Updated `VERCEL_DEPLOYMENT.md` with the private GitHub repository, verified history audit, dashboard import steps, environment configuration, build settings, health-check procedure, and production smoke-test boundary. Updated `README.md` with the repository location and current Vercel status.
+- Required Cloudflare variable names are `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, and `CLOUDFLARE_AI_MODEL`. Enter secrets directly in Vercel Settings; `.env.local` remains excluded. Optional environmental-data and fallback-provider variables are documented separately. No secret values were added to documentation.
+- The production runtime still has a process-local rate limiter, and official CPCB AQI remains unresolved for the configured resource. These limitations remain documented.
+
+### Verification and deployment status
+
+- GitHub CLI authentication and private repository access were verified. `main` is the default branch and the pushed commit was confirmed against the remote. No environment credentials or `.env.local` files are in Git history.
+- Vercel CLI is not installed, there is no linked Vercel project, and no Vercel dashboard deployment could be performed from this workspace. No Production variables, generated URL, deployment logs, homepage, static assets, or production health response were verified.
+- No production AI generation, external AQI request, Vercel deployment, or deployment-triggering action was performed. The exact next action is to import the private GitHub repository in the Vercel dashboard, configure Production variables there, and deploy. After a deployment exists, verify the homepage and `/api/health/providers`; obtain separate explicit approval before any production Cloudflare generation.

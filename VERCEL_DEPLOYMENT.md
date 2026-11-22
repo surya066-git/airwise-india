@@ -2,11 +2,20 @@
 
 ## Status
 
-Local production build and automated tests are the evidence available for this workspace. A Vercel deployment has not been created or verified. This checkout has no Git metadata, no `.vercel/project.json`, and no Vercel CLI, so its project association and Production environment variables cannot be inspected here. Do not claim a public URL until Vercel returns one for a successful deployment.
+Local production build and automated tests are the evidence available for this workspace. The private GitHub repository [surya066-git/airwise-india](https://github.com/surya066-git/airwise-india) is on `main`; no Vercel project or production deployment has been created or verified. The Vercel CLI and `.vercel/project.json` are absent, so project linkage and Production environment variables cannot be inspected here. Do not claim a production URL until Vercel returns one for a successful deployment.
 
 ## Project and build settings
 
-Create a Git repository containing this project root, push it to a Git provider, and import it as a Vercel project. `.gitignore` excludes `.env*` except `.env.example`; keep `.env.local` out of the repository. This workspace has no `.git` directory, so its commit history and tracked-file status cannot be audited here. After creating the repository, verify the ignore rule and inspect the staged file list before the first push.
+In [Vercel](https://vercel.com/new), connect the GitHub account and import the existing private repository `surya066-git/airwise-india`. Select `main` for Production. Grant Vercel access to this private repository when prompted. `.gitignore` excludes `.env*` except `.env.example`; `.env.local` is not tracked. The reachable Git history was audited: it contains no environment files other than `.env.example`, and no configured secret values matched the committed files. The one authorization-header pattern detected by a heuristic is a synthetic provider error fixture in `lib/ai/gemini.test.ts`, covered by the header-redaction test.
+
+### Dashboard connection steps
+
+1. Sign in to Vercel and choose **Add New → Project**.
+2. Import `surya066-git/airwise-india`; authorize Vercel to access the private repository if prompted.
+3. Keep the detected Next.js framework, repository root, `npm` install detection from `package-lock.json`, `npm run build`, and the default Next.js output directory. Use Node.js `24.x`.
+4. Before deploying, add `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, and `CLOUDFLARE_AI_MODEL` in **Settings → Environment Variables**, with Production selected. Enter the secret directly into Vercel. Add Preview or Development values only when those environments should contact Cloudflare.
+5. Deploy from `main`. After Vercel assigns the production origin, set `NEXT_PUBLIC_APP_URL` to that origin if canonical metadata should use it, then redeploy so the setting is included.
+6. Record the actual deployment URL and follow the staged checks below. Do not use the assistant for a production generation smoke test until the user explicitly approves it.
 
 Use these settings:
 
@@ -61,7 +70,7 @@ The local `.env.local` file does not populate Vercel automatically. Create each 
 - `/api/health/providers` only reads in-process configuration/circuit state. It makes no provider request and now omits raw last-failure codes and provider messages. It does not consume AI quota.
 - The rate limiter is an in-memory map, so limits are per Node.js process and are not shared between Vercel instances. Configure Vercel Firewall rate limiting or add a shared rate-limit store before relying on it for public abuse prevention.
 - Baseline security headers are set in `next.config.ts` (`nosniff`, `Referrer-Policy`, frame denial, and a geolocation `Permissions-Policy`).
-- `.gitignore` excludes `.env*` except `.env.example`, but absence of Git metadata means repository history, staging, and previously tracked-secret status could not be checked here. Rotate any provider credential that was exposed before enabling it in Production.
+- `.gitignore` excludes `.env*` except `.env.example`. The one-commit Git history was scanned: `.env.example` is the only tracked environment-style file, no configured secret values matched committed files, and the sole header-shaped heuristic match is a mock diagnostic fixture in `lib/ai/gemini.test.ts`. This audit cannot prove whether credentials were exposed outside this repository; rotate any provider credential previously shared outside the approved secret manager before enabling it in Production.
 
 ## Production data behavior
 
@@ -92,8 +101,7 @@ These checks establish local readiness only. No Vercel build, deployment, produc
 
 ## Current deployment blockers
 
-- No Vercel project is linked and no Vercel CLI is installed in this workspace.
-- No Git repository is present, so Vercel's Git integration cannot be imported until a repository is created and pushed.
+- The repository is available as a private GitHub project, but Vercel has not been connected to it. Vercel CLI is not installed; import it through the dashboard and grant access to the private repository.
 - Vercel Production environment-variable presence and project plan/function settings are unknown.
 - The in-memory rate limiter is not distributed across serverless instances.
 - Official CPCB AQI remains unresolved for the configured data.gov.in resource.
