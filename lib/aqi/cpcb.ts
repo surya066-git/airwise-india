@@ -13,6 +13,7 @@ const MAX_TOTAL_RECORDS = 1_000;
 const PAGE_GAP_MS = 200;
 const CPCB_CACHE_TTL_MS = 5 * 60 * 1000;
 const CPCB_RATE_LIMIT_COOLDOWN_MS = 60 * 1000;
+const CPCB_TRANSPORT_FAILURE_COOLDOWN_MS = 60 * 1000;
 const MAX_RETRY_AFTER_WAIT_MS = 5_000;
 type JsonRecord = Record<string, unknown>;
 type Coordinates = { latitude: number; longitude: number };
@@ -23,6 +24,8 @@ const cpcbInFlight = new Map<string, Promise<{ payload?: unknown; pagination?: C
 let cpcbRequestQueue: Promise<void> = Promise.resolve();
 let lastCpcbRequestAt = 0;
 let cpcbRateLimitedUntil = 0;
+let cpcbUnavailableUntil = 0;
+let cpcbUnavailableMessage = "";
 
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -290,6 +293,16 @@ function startCpcbRateLimitCooldown(retryAfter: string | null) {
   cpcbRateLimitedUntil = Math.max(cpcbRateLimitedUntil, now + cooldown);
 }
 
+function cpcbTransportFailureMessage(error: unknown): string {
+  if (error instanceof Error && error.name === "TimeoutError") {
+    return "The data.gov.in request timed out. Please try again later; no AQI has been estimated.";
+  }
+  if (error instanceof TypeError) {
+    return "The server could not connect to data.gov.in. Please try again later; no AQI has been estimated.";
+  }
+  return "The CPCB/data.gov.in service did not return a valid response. No AQI has been estimated.";
+}
+
 function rowFingerprint(row: JsonRecord): string {
   return JSON.stringify(Object.keys(row).sort().map((key) => [key, row[key]]));
 }
@@ -328,6 +341,7 @@ function enqueueCpcbPage(url: URL): Promise<Response> {
     const wait = Math.max(0, lastCpcbRequestAt + PAGE_GAP_MS - Date.now());
     if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
     if (cpcbRateLimitedUntil > Date.now()) return new Response(null, { status: 429 });
+    if (cpcbUnavailableUntil > Date.now()) return new Response(null, { status: 503 });
     try {
       return await requestCpcbPage(url);
     } finally {
@@ -461,6 +475,8 @@ export function clearCpcbCacheForTests() {
   cpcbRequestQueue = Promise.resolve();
   lastCpcbRequestAt = 0;
   cpcbRateLimitedUntil = 0;
+  cpcbUnavailableUntil = 0;
+  cpcbUnavailableMessage = "";
 }
 
 export async function fetchCpcbByLocation(
@@ -493,6 +509,9 @@ export async function fetchCpcbByLocation(
     return emptyOfficial(requestedCity, "unavailable",
       "data.gov.in recently rate limited requests. Please wait before refreshing; no AQI has been estimated.");
   }
+  if (cpcbUnavailableUntil > Date.now()) {
+    return emptyOfficial(requestedCity, "unavailable", cpcbUnavailableMessage);
+  }
 
   try {
     let request = cpcbInFlight.get(cacheKey);
@@ -507,9 +526,11 @@ export async function fetchCpcbByLocation(
     cpcbCache.set(cacheKey, { payload: result.payload, pagination: result.pagination, expiresAt: Date.now() + CPCB_CACHE_TTL_MS });
     if (cpcbCache.size > 100) cpcbCache.delete(cpcbCache.keys().next().value!);
     return parseCpcbResponse(result.payload, requestedCity, Date.now(), targetCoordinates, result.pagination);
-  } catch {
+  } catch (error) {
     cpcbInFlight.delete(cacheKey);
-    return emptyOfficial(requestedCity, "unavailable", "The CPCB/data.gov.in service did not return a valid response. No AQI has been estimated.");
+    cpcbUnavailableMessage = cpcbTransportFailureMessage(error);
+    cpcbUnavailableUntil = Date.now() + CPCB_TRANSPORT_FAILURE_COOLDOWN_MS;
+    return emptyOfficial(requestedCity, "unavailable", cpcbUnavailableMessage);
   }
 }
 

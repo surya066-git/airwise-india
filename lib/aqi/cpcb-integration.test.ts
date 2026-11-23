@@ -162,6 +162,25 @@ describe("CPCB data.gov.in adapter", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it.each([
+    [new TypeError("private connection detail"), "could not connect"],
+    [new DOMException("private timeout detail", "TimeoutError"), "request timed out"]
+  ])("classifies safe transport failures and avoids retrying other cities", async (failure, expectedMessage) => {
+    vi.stubEnv("DATA_GOV_API_KEY", "test-key");
+    vi.stubEnv("DATA_GOV_RESOURCE_ID", RESOURCE_ID);
+    const fetchMock = vi.fn().mockRejectedValue(failure);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const first = await fetchCpcbByLocation("Pune");
+    const second = await fetchCpcbByLocation("Hyderabad");
+
+    expect(first.status).toBe("unavailable");
+    expect(first.message).toContain(expectedMessage);
+    expect(second.message).toBe(first.message);
+    expect(first.message).not.toContain("private");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("uses the OGD resource endpoint, API-key query authentication, and record pagination parameters", async () => {
     vi.stubEnv("DATA_GOV_API_KEY", "test-secret-do-not-print");
     vi.stubEnv("DATA_GOV_RESOURCE_ID", RESOURCE_ID);
