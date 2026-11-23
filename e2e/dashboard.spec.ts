@@ -129,6 +129,25 @@ test("location search selects a city and requests that city", async ({ page }) =
   await expect(page.locator("#aqi-title")).toHaveText("Hyderabad");
 });
 
+test("browser geolocation keeps the selected city for CPCB matching", async ({ context, page }) => {
+  await context.grantPermissions(["geolocation"]);
+  await context.setGeolocation({ latitude: 17.385, longitude: 78.4867 });
+  await page.goto("/");
+  await openMobileMenuIfNeeded(page);
+  await page.getByRole("button", { name: /Choose an area/ }).click();
+  await page.getByLabel("City or town").fill("Hyderabad");
+
+  const locationRequest = page.waitForRequest((request) => {
+    const url = new URL(request.url());
+    return url.pathname === "/api/aqi" && url.searchParams.get("city") === "Hyderabad" &&
+      url.searchParams.get("latitude") === "17.385" && url.searchParams.get("longitude") === "78.4867";
+  });
+  await page.getByRole("button", { name: "Use my current location" }).click();
+  await locationRequest;
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("airwise-location")))
+    .toContain('"city":"Hyderabad"');
+});
+
 test("available official AQI and pollutant values retain attribution", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".aqi-number")).toHaveText("82");

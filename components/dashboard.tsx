@@ -297,7 +297,7 @@ export default function Dashboard() {
               <div>
                 <p className="card-kicker">Official CPCB air quality</p>
                 <h2 id="aqi-title">{location.city || official?.city || "Your selected area"}</h2>
-                <p>{official?.state ? `${official.state}, India` : location.city ? "India" : "Select a city or use your current location"}</p>
+                <p>{official?.state ? `${official.state}, India` : location.city ? "India" : "Choose a city for official CPCB data"}</p>
               </div>
               {loading
                 ? <span className="status-pill status-unavailable" role="status"><i />Checking source</span>

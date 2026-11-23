@@ -120,7 +120,8 @@ Live Gemini diagnosis on 21 November 2026: Tests A (minimal text), B (minimal JS
 ## API routes
 
 - `GET /api/aqi?city=Pune&latitude=18.5204&longitude=73.8567`
-  - City is optional when coordinates are supplied.
+  - City is required to query CPCB/data.gov.in; coordinates alone are not used for a national scan.
+  - Coordinates optionally narrow CPCB station matching and enable nearby OpenAQ measurements.
   - Latitude and longitude must be supplied together.
   - Returns official and supplementary source states separately.
 - `POST /api/assistant`

@@ -12,6 +12,7 @@ const MAX_PAGE_COUNT = 50;
 const MAX_TOTAL_RECORDS = 1_000;
 const PAGE_GAP_MS = 200;
 const CPCB_CACHE_TTL_MS = 5 * 60 * 1000;
+const CPCB_RATE_LIMIT_COOLDOWN_MS = 60 * 1000;
 const MAX_RETRY_AFTER_WAIT_MS = 5_000;
 type JsonRecord = Record<string, unknown>;
 type Coordinates = { latitude: number; longitude: number };
@@ -21,6 +22,7 @@ const cpcbCache = new Map<string, CachedCpcbPayload>();
 const cpcbInFlight = new Map<string, Promise<{ payload?: unknown; pagination?: CpcbPaginationAudit; failure?: OfficialReading }>>();
 let cpcbRequestQueue: Promise<void> = Promise.resolve();
 let lastCpcbRequestAt = 0;
+let cpcbRateLimitedUntil = 0;
 
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -279,6 +281,15 @@ function retryAfterMs(value: string | null, now = Date.now()): number | null {
   return Number.isFinite(date) ? Math.max(0, date - now) : null;
 }
 
+function startCpcbRateLimitCooldown(retryAfter: string | null) {
+  const now = Date.now();
+  const requestedDelay = retryAfterMs(retryAfter, now);
+  const cooldown = requestedDelay !== null && requestedDelay > 0
+    ? requestedDelay
+    : CPCB_RATE_LIMIT_COOLDOWN_MS;
+  cpcbRateLimitedUntil = Math.max(cpcbRateLimitedUntil, now + cooldown);
+}
+
 function rowFingerprint(row: JsonRecord): string {
   return JSON.stringify(Object.keys(row).sort().map((key) => [key, row[key]]));
 }
@@ -298,6 +309,7 @@ async function requestCpcbPage(url: URL): Promise<Response> {
   const response = await fetchProviderWithRetry(url, init, 8_000);
   if (response.status !== 429) return response;
 
+  startCpcbRateLimitCooldown(response.headers.get("retry-after"));
   const waitMs = retryAfterMs(response.headers.get("retry-after"));
   if (waitMs === null || waitMs > MAX_RETRY_AFTER_WAIT_MS) return response;
   try {
@@ -306,13 +318,16 @@ async function requestCpcbPage(url: URL): Promise<Response> {
     // Keep the rate-limit response authoritative if its body cannot be discarded.
   }
   if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
-  return fetchProviderWithRetry(url, init, 8_000);
+  const retry = await fetchProviderWithRetry(url, init, 8_000);
+  if (retry.status === 429) startCpcbRateLimitCooldown(retry.headers.get("retry-after"));
+  return retry;
 }
 
 function enqueueCpcbPage(url: URL): Promise<Response> {
   const request = cpcbRequestQueue.then(async () => {
     const wait = Math.max(0, lastCpcbRequestAt + PAGE_GAP_MS - Date.now());
     if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+    if (cpcbRateLimitedUntil > Date.now()) return new Response(null, { status: 429 });
     try {
       return await requestCpcbPage(url);
     } finally {
@@ -445,6 +460,7 @@ export function clearCpcbCacheForTests() {
   cpcbInFlight.clear();
   cpcbRequestQueue = Promise.resolve();
   lastCpcbRequestAt = 0;
+  cpcbRateLimitedUntil = 0;
 }
 
 export async function fetchCpcbByLocation(
@@ -472,6 +488,11 @@ export async function fetchCpcbByLocation(
     return parseCpcbResponse(cached.payload, requestedCity, Date.now(), targetCoordinates, cached.pagination);
   }
   cpcbCache.delete(cacheKey);
+
+  if (cpcbRateLimitedUntil > Date.now()) {
+    return emptyOfficial(requestedCity, "unavailable",
+      "data.gov.in recently rate limited requests. Please wait before refreshing; no AQI has been estimated.");
+  }
 
   try {
     let request = cpcbInFlight.get(cacheKey);

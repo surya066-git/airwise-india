@@ -53,7 +53,7 @@ export default function LocationDialog({
     }
     navigator.geolocation.getCurrentPosition(
       (position) => onApply({
-        city: "",
+        city: city.trim(),
         latitude: position.coords.latitude,
         longitude: position.coords.longitude
       }),
@@ -69,11 +69,11 @@ export default function LocationDialog({
         <span className="dialog-icon"><MapPin size={20} /></span>
         <div className="eyebrow"><span /> Location</div>
         <h2 id="location-dialog-title">Choose your area</h2>
-        <p className="dialog-copy" id="location-dialog-copy">We request readings for this location only. If its station is missing, AIRWISE will say so rather than show another city&apos;s data.</p>
+        <p className="dialog-copy" id="location-dialog-copy">The CPCB data.gov.in feed is filtered by city. Choose a city for official readings; coordinates can narrow station matching and find nearby OpenAQ measurements.</p>
         <form className="dialog-form" onSubmit={submit}>
-          <label htmlFor="city-name">City or town <small>Optional if you use coordinates only</small></label>
+          <label htmlFor="city-name">City or town <small>Needed for official CPCB data.gov.in matching</small></label>
           <input id="city-name" value={city} onChange={(event) => setCity(event.target.value)} maxLength={100} placeholder="For example, Pune" />
-          <div className="coordinate-heading">Coordinates <small>Optional; CPCB station matching searches within 50 km and OpenAQ within 25 km</small></div>
+          <div className="coordinate-heading">Coordinates <small>Optional; refine CPCB matching within 50 km and find OpenAQ readings within 25 km</small></div>
           <div className="coordinate-row">
             <div><label htmlFor="latitude">Latitude</label><input id="latitude" inputMode="decimal" value={latitude} onChange={(event) => setLatitude(event.target.value)} placeholder="18.5204" /></div>
             <div><label htmlFor="longitude">Longitude</label><input id="longitude" inputMode="decimal" value={longitude} onChange={(event) => setLongitude(event.target.value)} placeholder="73.8567" /></div>

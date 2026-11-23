@@ -120,6 +120,48 @@ describe("CPCB data.gov.in adapter", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("does not scan the national resource for a coordinate-only location", async () => {
+    vi.stubEnv("DATA_GOV_API_KEY", "test-key");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await fetchCpcbByLocation("", 18.5204, 73.8567);
+
+    expect(result.status).toBe("unavailable");
+    expect(result.message).toContain("Coordinates alone are not used to scan the national resource");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("backs off from data.gov.in after a rate limit across city requests", async () => {
+    vi.stubEnv("DATA_GOV_API_KEY", "test-key");
+    vi.stubEnv("DATA_GOV_RESOURCE_ID", RESOURCE_ID);
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 429 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const first = await fetchCpcbByLocation("Pune");
+    const second = await fetchCpcbByLocation("Hyderabad");
+
+    expect(first.pagination).toMatchObject({ status: "rate_limited", pageCount: 1 });
+    expect(second.message).toContain("recently rate limited requests");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips city requests already waiting in the queue after a rate limit", async () => {
+    vi.stubEnv("DATA_GOV_API_KEY", "test-key");
+    vi.stubEnv("DATA_GOV_RESOURCE_ID", RESOURCE_ID);
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 429 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const [first, queued] = await Promise.all([
+      fetchCpcbByLocation("Pune"),
+      fetchCpcbByLocation("Hyderabad")
+    ]);
+
+    expect(first.pagination?.status).toBe("rate_limited");
+    expect(queued.status).toBe("unavailable");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("uses the OGD resource endpoint, API-key query authentication, and record pagination parameters", async () => {
     vi.stubEnv("DATA_GOV_API_KEY", "test-secret-do-not-print");
     vi.stubEnv("DATA_GOV_RESOURCE_ID", RESOURCE_ID);
