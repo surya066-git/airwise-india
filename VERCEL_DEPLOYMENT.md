@@ -2,7 +2,7 @@
 
 ## Status
 
-Local production build and automated tests are the evidence available for this workspace. The private GitHub repository [surya066-git/airwise-india](https://github.com/surya066-git/airwise-india) is on `main`; no Vercel project or production deployment has been created or verified. The Vercel CLI and `.vercel/project.json` are absent, so project linkage and Production environment variables cannot be inspected here. Do not claim a production URL until Vercel returns one for a successful deployment.
+The public production alias [airwise-india-one.vercel.app](https://airwise-india-one.vercel.app/) responds over HTTPS and is connected to the private GitHub repository [surya066-git/airwise-india](https://github.com/surya066-git/airwise-india) on `main`. A live `/api/aqi?city=Hyderabad` request returned no AQI and the safe diagnostic classified a connection failure to data.gov.in. The Vercel request ID showed the function executing in `iad1` while the request entered through `bom1`. `vercel.json` now pins `/api/aqi` and `/api/assistant` to Mumbai (`bom1`) so these India-source requests run closer to the provider. Vercel project settings and detailed runtime logs cannot be inspected from this workspace because the Vercel CLI, project link, and access token are unavailable.
 
 ## Project and build settings
 
@@ -28,10 +28,11 @@ Use these settings:
 | Output directory | Vercel/Next.js default; do not override `.next` |
 | Node.js | 24.x; `package.json` pins this tested major |
 | Runtime | Node.js for `/api/aqi` and `/api/assistant` |
+| Function region | Mumbai (`bom1`) for `/api/aqi` and `/api/assistant`, set in `vercel.json` |
 
 The two data/assistant routes set `maxDuration = 300` seconds for bounded pagination, provider timeouts, and fallbacks. Ensure the Vercel project plan and Fluid Compute settings permit this duration. Vercel documents `maxDuration` for Next.js App Router segment configuration and the platform's plan/runtime limits in [Function duration configuration](https://vercel.com/docs/functions/configuring-functions/duration). Node 24 is supported and can be pinned with `engines.node` in [Vercel Node.js versions](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions). Vercel detects Next.js, reads the package build script, and manages the output directory by default; see [Build configuration](https://vercel.com/docs/builds/configure-a-build).
 
-No `vercel.json` is needed for the current Next.js setup. The route files carry the Node runtime and execution duration settings.
+The route files carry the Node runtime and execution duration settings. Vercel's per-function configuration in `vercel.json` places the two routes that call CPCB/data.gov.in in Mumbai (`bom1`). This follows Vercel's guidance to run functions close to their data source; see [Configuring regions for Vercel Functions](https://vercel.com/docs/functions/configuring-functions/region). The Next.js route-level `preferredRegion` option is deprecated in the installed Next.js 16.4.6 documentation, so region selection stays in Vercel configuration.
 
 ## Environment variables
 
@@ -91,18 +92,18 @@ The Prompt 16 successful Cloudflare check was a local development-mode verificat
 
 - `npm run typecheck`: passed.
 - `npm run lint`: passed.
-- `npm test`: passed, 17 files and 154 tests.
+- `npm test`: passed, 17 files and 160 tests.
 - `npm run build`: passed; Next.js generated the dashboard and API route handlers.
-- `npm run test:e2e -- --workers=1`: passed, 39 tests across mobile, tablet, and desktop; the dedicated test server used the offline guard and mocked browser API responses.
+- `npm run test:e2e -- e2e/dashboard.spec.ts --workers=1`: passed, 51 dashboard tests across mobile, tablet, and desktop; the dedicated test server used the offline guard and mocked browser API responses.
 - A production-mode local `GET /api/health/providers` returned HTTP 200 with four providers and safe projected metadata. Its route and unit test make no external requests; credentials and internal failure codes were absent.
 - The configured secret values were compared in memory against repository source plus `.next/static` and `.next/server`; no matches were found. No values were printed. Git history could not be scanned because this checkout has no `.git` metadata.
 
-These checks establish local readiness only. No Vercel build, deployment, production environment-variable lookup, production data-source call, or production AI generation was performed.
+The local checks pass. Production page and provider-health requests return HTTP 200. A live production AQI request returns HTTP 200 with CPCB unavailable and AQI null; after adding the safe transport diagnostic, the response identified a connection failure to data.gov.in. The production region override to `bom1` is pending Vercel redeployment and live verification. No production AI generation was performed.
 
 ## Current deployment blockers
 
-- The repository is available as a private GitHub project, but Vercel has not been connected to it. Vercel CLI is not installed; import it through the dashboard and grant access to the private repository.
-- Vercel Production environment-variable presence and project plan/function settings are unknown.
+- Vercel project settings and detailed function logs are not accessible from this workspace. The Vercel CLI is not installed, and no project link or access token is configured.
+- The live data.gov.in request still fails from Vercel. The new `bom1` region setting needs a production deployment and a follow-up AQI request to verify whether the regional mismatch caused it.
 - The in-memory rate limiter is not distributed across serverless instances.
 - Official CPCB AQI remains unresolved for the configured data.gov.in resource.
-- No production URL or production smoke-test result exists. A production AI generation remains gated on explicit user approval.
+- A production AI generation remains gated on explicit user approval.

@@ -143,7 +143,7 @@ npm run build
 
 ## Deployment
 
-The private GitHub repository is [surya066-git/airwise-india](https://github.com/surya066-git/airwise-india), with `main` as its default branch. Follow [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) to import it into Vercel, set environment variables, and run the staged production checks. Vercel is not connected yet, and no production URL has been verified.
+The private GitHub repository is [surya066-git/airwise-india](https://github.com/surya066-git/airwise-india), with `main` as its default branch. The public production alias is [airwise-india-one.vercel.app](https://airwise-india-one.vercel.app/). Follow [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for production verification. `/api/aqi` and `/api/assistant` are pinned to Vercel's Mumbai region (`bom1`) because both call India-specific CPCB/data.gov.in data.
 
 ## Current limitations
 
@@ -152,7 +152,7 @@ The private GitHub repository is [surya066-git/airwise-india](https://github.com
 - CPCB pollutant values do not include units or averaging windows, so the published AQI method cannot be reproduced from this resource.
 - Gemini has not produced a response that passes application validation. Prompt 5's live A/B/C checks returned HTTP 503; the latest minimal-text request timed out, and Gemini returned HTTP 429 in the default OpenRouter full-route check.
 - Prompt 14's response failed AIRWISE semantic validation with `unsupported_personalization`; its text was not retained, so the exact claim is unknown. Prompt 16 then made one Cloudflare-only assistant request through the UI with the selected Hyderabad public-transit preference. Cloudflare and AIRWISE both returned HTTP 200, structured and semantic validation passed, and the frontend showed the actual personalized recommendation with Cloudflare attribution and the AQI limitation notice. CPCB/OpenAQ were not queried; no other provider or retry was used. This verifies one live dev-mode result, not production deployment behavior.
-- The repository is private and pushed to GitHub, but no Vercel project is linked; `.vercel/project.json` and the Vercel CLI are absent. Production environment variables could not be checked and no deployment URL exists.
+- The production AQI route currently reports a connection failure to data.gov.in. Its previous function execution region was Vercel's default `iad1`; the `vercel.json` region override moves it to Mumbai (`bom1`) and needs live verification.
 - The optional Ollama adapter is disabled by default and unavailable in production. Its development-only mock tests do not require a local model.
 - Earlier OpenRouter attempts did not produce an accepted answer and the OpenRouter key was pasted in chat. Rotate/revoke it before enabling the OpenRouter production fallback if that has not already been done. Prompt 16's validated live response used Cloudflare.
 - City-name matching uses exact case-insensitive matching against the returned `city` value; there is no geocoding or alias directory.
