@@ -29,7 +29,7 @@ function standardAdvice(data: AirQualityResponse, preferences: UserPreferences):
     recommendations: buildRecommendations(data, preferences),
     uncertainty: currentOfficial
       ? "A station reading may not describe every part of the selected area. Recheck the source before time-sensitive plans."
-      : "Current outdoor conditions are unverified. These actions are general planning guidance and do not imply a pollution category."
+      : "No live official AQI is available, so current air quality is unknown. Use these as general planning suggestions, not as a pollution rating."
   };
 }
 
