@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Send, ShieldCheck, Sparkles, Wind } from "lucide-react";
+import { ArrowRight, MapPin, Send, ShieldCheck, Sparkles, Wind } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import type { LocationChoice } from "@/components/location-dialog";
@@ -141,66 +141,84 @@ export default function AssistantPanel({ location, preferences }: {
     }
   }
 
-  function setStarterQuestion(text: string) {
-    setQuestion(text);
-    document.getElementById("assistant-question")?.focus();
-  }
+  const hasLocation = Boolean(location.city) || location.latitude !== null;
+  const locationLabel = location.city || (location.latitude !== null ? "Current location" : "No area selected");
 
   return <section className="assistant-section" id="assistant" aria-labelledby="assistant-title">
     <div className="assistant-intro">
       <span className="assistant-orb"><Sparkles size={22} /></span>
       <div>
         <p className="eyebrow">Ask AIRWISE</p>
-        <h2 id="assistant-title">A thoughtful answer starts with context.</h2>
-        <p>Ask about a journey, a routine or the readings available for your area. AIRWISE separates verified measurements from general suggestions.</p>
-        <div className="assistant-trust"><ShieldCheck size={17} />Your selected preferences stay in this browser. Only the question and relevant selected context are sent to an AI provider when it returns validated advice.</div>
+        <h2 id="assistant-title">Plan your day with air context.</h2>
+        <p>Ask about an outdoor plan, a commute or a home routine. AIRWISE uses local readings when they can be verified and labels general advice clearly.</p>
+        <ol className="assistant-promise-list" aria-label="How AIRWISE helps">
+          <li><span>01</span><p><strong>Ask about a real moment</strong><small>Walks, school runs, commutes or home routines.</small></p></li>
+          <li><span>02</span><p><strong>Get practical options</strong><small>Suggestions shaped by your selected area and preferences.</small></p></li>
+          <li><span>03</span><p><strong>See what is verified</strong><small>Source-backed readings stay separate from general guidance.</small></p></li>
+        </ol>
+        <div className="assistant-trust"><ShieldCheck size={17} /><span>Preferences are stored in this browser. When you ask, AIRWISE sends your question and relevant selected context to its configured provider.</span></div>
       </div>
     </div>
     <div className="chat-panel">
       <div className="chat-topline">
         <span className="assistant-avatar"><Wind size={17} /></span>
-        <div><strong>AIRWISE India</strong><small>Local data when available · clear when it is missing</small></div>
-        <span className="chat-status"><i /> Ready when you are</span>
+        <div><strong>AIRWISE Guide</strong><small>Source-aware air quality suggestions</small></div>
+        <span className={`chat-status${busy ? " is-busy" : ""}`} role="status" aria-live="polite"><i />{busy ? "Preparing guidance" : "Ready to help"}</span>
+      </div>
+      <div className="chat-context-bar">
+        <span className="chat-context-icon"><MapPin size={16} /></span>
+        <span className="chat-context-copy"><small>AREA CONTEXT</small><strong>{locationLabel}</strong></span>
+        <span className="chat-context-hint">{hasLocation ? "Checked when you ask about local conditions." : "Choose an area to add local context."}</span>
       </div>
       <div className="chat-messages" role="log" aria-live="polite" aria-label="Assistant conversation" aria-busy={busy}>
         {messages.length === 0
-          ? <div className="assistant-welcome"><span><Sparkles size={17} /></span><p>What would you like to plan? Try one of the questions below, or write your own. I’ll say when current data is unavailable.</p></div>
+          ? <div className="assistant-welcome">
+              <span className="assistant-welcome-mark"><Sparkles size={18} /></span>
+              <div className="assistant-welcome-copy">
+                <small>YOUR AIRWISE GUIDE</small>
+                <h3>What are you planning today?</h3>
+                <p>Choose a question to begin, or write your own. I’ll separate verified readings from general advice.</p>
+              </div>
+            </div>
           : messages.map((message, index) => <div className={`chat-message message-${message.role}`} key={index}>
               {message.role === "assistant" && <span className="message-avatar"><Wind size={13} /></span>}
-              <p>{message.content}</p>
-              {message.aiUnavailable && <small className="assistant-failure-role" role="status">AI unavailable · Cloudflare Workers AI</small>}
-              {message.responseMode && <small className="assistant-response-mode">
-                {message.responseMode === "standard_guidance"
-                  ? "Standard AIRWISE guidance · rule-based, not AI-generated"
-                  : message.provider === "Cloudflare Workers AI"
-                    ? "AI-generated recommendations · Cloudflare Workers AI"
-                    : `AI-generated recommendations · ${message.provider ?? "configured provider"}`}
-              </small>}
-              {message.providerNote && <small className="assistant-provider-diagnostic">Provider status: {message.providerNote}</small>}
-              {message.providerNotice && <small className="assistant-provider-diagnostic">{message.providerNotice}</small>}
-              {message.limitationNotice && <small className="assistant-uncertainty">{message.limitationNotice}</small>}
-              {message.verifiedData && <details className="verified-context"><summary>Verified source context</summary><pre>{message.verifiedData}</pre></details>}
-              {message.advice?.recommendations.map((recommendation, itemIndex) => <article className="assistant-recommendation" key={itemIndex}>
-                <small className={`assistant-guidance-type guidance-${recommendation.guidanceType}`}>{GUIDANCE_LABELS[recommendation.guidanceType]}</small>
-                <strong>{recommendation.action}</strong>
-                <p>{recommendation.reason}</p>
-                <small>For: {recommendation.intendedProfile}</small>
-                {recommendation.personalizedBy.length > 0 && <small>Supported by selected: {recommendation.personalizedBy.map((key) => PREFERENCE_LABELS[key]).join(", ")}</small>}
-                {recommendation.conditionalOn.length > 0 && <small>Condition, if applicable: {recommendation.conditionalOn.map((key) => PREFERENCE_LABELS[key]).join(", ")}</small>}
-                <small>Expected benefit: {recommendation.expectedBenefit}</small>
-                <ul>{recommendation.practicalSteps.map((step) => <li key={step}>{step}</li>)}</ul>
-                {recommendation.environmentalImpact && <small>{recommendation.environmentalImpact}</small>}
-              </article>)}
-              {message.advice?.uncertainty && <small className="assistant-uncertainty">{message.advice.uncertainty}</small>}
+              <div className="message-content">
+                <p className="message-bubble">{message.content}</p>
+                {message.aiUnavailable && <small className="assistant-failure-role" role="status">AI unavailable · Cloudflare Workers AI</small>}
+                {message.responseMode && <small className="assistant-response-mode">
+                  {message.responseMode === "standard_guidance"
+                    ? "Standard AIRWISE guidance · rule-based, not AI-generated"
+                    : message.provider === "Cloudflare Workers AI"
+                      ? "AI-generated recommendations · Cloudflare Workers AI"
+                      : `AI-generated recommendations · ${message.provider ?? "configured provider"}`}
+                </small>}
+                {message.providerNote && <small className="assistant-provider-diagnostic">Provider status: {message.providerNote}</small>}
+                {message.providerNotice && <small className="assistant-provider-diagnostic">{message.providerNotice}</small>}
+                {message.limitationNotice && <small className="assistant-uncertainty">{message.limitationNotice}</small>}
+                {message.verifiedData && <details className="verified-context"><summary>Verified source context</summary><pre>{message.verifiedData}</pre></details>}
+                {message.advice?.recommendations.map((recommendation, itemIndex) => <article className="assistant-recommendation" key={itemIndex}>
+                  <small className={`assistant-guidance-type guidance-${recommendation.guidanceType}`}>{GUIDANCE_LABELS[recommendation.guidanceType]}</small>
+                  <strong>{recommendation.action}</strong>
+                  <p>{recommendation.reason}</p>
+                  <small>For: {recommendation.intendedProfile}</small>
+                  {recommendation.personalizedBy.length > 0 && <small>Supported by selected: {recommendation.personalizedBy.map((key) => PREFERENCE_LABELS[key]).join(", ")}</small>}
+                  {recommendation.conditionalOn.length > 0 && <small>Condition, if applicable: {recommendation.conditionalOn.map((key) => PREFERENCE_LABELS[key]).join(", ")}</small>}
+                  <small>Expected benefit: {recommendation.expectedBenefit}</small>
+                  <ul>{recommendation.practicalSteps.map((step) => <li key={step}>{step}</li>)}</ul>
+                  {recommendation.environmentalImpact && <small>{recommendation.environmentalImpact}</small>}
+                </article>)}
+                {message.advice?.uncertainty && <small className="assistant-uncertainty">{message.advice.uncertainty}</small>}
+              </div>
             </div>)}
-        {busy && <div className="chat-message message-assistant"><span className="message-avatar"><Wind size={13} /></span><p className="typing">Checking available context…</p></div>}
+        {busy && <div className="chat-message message-assistant"><span className="message-avatar"><Wind size={13} /></span><div className="message-content"><p className="message-bubble typing">Checking available context…</p></div></div>}
       </div>
       <div className="suggested-prompts" aria-label="Suggested questions">
-        {STARTERS.map((text) => <button type="button" key={text} onClick={() => setStarterQuestion(text)}>{text}<ArrowRight size={15} /></button>)}
+        <p className="suggested-prompts-label">{messages.length === 0 ? "TRY A QUESTION" : "KEEP GOING"}</p>
+        {STARTERS.map((text) => <button type="button" key={text} onClick={() => void submit(undefined, text)}>{text}<ArrowRight size={15} /></button>)}
       </div>
       <form className="chat-form" onSubmit={(event) => void submit(event)}>
         <label className="sr-only" htmlFor="assistant-question">Ask AIRWISE INDIA</label>
-        <input id="assistant-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask about your daily routine…" maxLength={1200} aria-describedby="assistant-disclaimer" />
+        <input id="assistant-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask about a walk, commute or home routine…" maxLength={1200} aria-describedby="assistant-disclaimer" />
         <button type="submit" aria-label="Send question" disabled={!question.trim() || busy}><Send size={17} /></button>
       </form>
       <p className="chat-disclaimer" id="assistant-disclaimer">General information only; not medical advice. Current AQI is shown only when it is verified by the official source.</p>

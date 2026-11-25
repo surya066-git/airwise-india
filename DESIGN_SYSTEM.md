@@ -52,7 +52,7 @@ The scale uses sentence case and comfortable line heights. The root body size is
 - **Daily plan:** Standard deterministic guidance is labeled separately from AI answers. The plan follows morning/outdoor decisions, commute, workday/indoor routines, and evening planning in that order. Every recommendation retains its reason, intended profile, preference evidence where applicable, practical steps, expected benefit, and expandable basis. Environmental impact copy contains no unsourced numeric estimate.
 - **Indoor coach:** A distinct soft-green section presents the existing indoor recommendation and its practical steps, benefit, and data basis. It does not assert unsupported health outcomes.
 - **OpenAQ:** Supplementary sensor data remains separate from the official CPCB panel and retains station-specific measurement times.
-- **Assistant:** The welcome state, suggested questions, input, response classifications, provider attribution, standard fallback labels, and unavailable-data notices are visually distinct. Provider attribution appears only for a validated provider answer.
+- **Assistant:** A clear three-step introduction explains the AIRWISE workflow beside a source-aware conversation panel with the selected area in view. Starter questions send directly, and the composer remains visible below the conversation. Replies use a single vertical content column so answer text, source labels, and recommendation cards stay readable at every width. Provider attribution appears only for a validated provider answer.
 - **Dialogs:** Location and preference forms have semantic labels, descriptions, keyboard focus containment, Escape dismissal, and focus restoration. Preferences are optional and remain in browser storage under the existing behavior.
 
 ## Layout and responsive rules
@@ -60,7 +60,7 @@ The scale uses sentence case and comfortable line heights. The root body size is
 - Content max width is 1280px (`--content-width`), with fluid page gutters.
 - At widths above 820px, the desktop navigation and multi-column layouts are available. Tablet widths use smaller overview columns and reorganized content grids.
 - At 820px and below, navigation becomes a mobile menu, the main overview becomes a single column, and the assistant becomes a stacked layout.
-- At 620px and below, the pollutant grid uses two columns and recommendation, dialog, and assistant content becomes single-column. Controls keep at least 44px targets.
+- At 620px and below, the pollutant grid uses two columns and recommendation, dialog, and assistant content becomes single-column. Assistant messages and recommendation cards never form horizontally compressed columns. Controls keep at least 44px targets.
 - The dashboard was captured at 390×844, 768×1024, and 1440×900. A Playwright assertion checks for horizontal page overflow at those configured viewports.
 - Motion is limited to small state transitions and scrolling. `prefers-reduced-motion: reduce` disables smooth scrolling and reduces animation/transition duration.
 

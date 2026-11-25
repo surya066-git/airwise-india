@@ -2,7 +2,13 @@
 
 ## Status
 
-The public production alias [airwise-india-one.vercel.app](https://airwise-india-one.vercel.app/) responds over HTTPS and is connected to the private GitHub repository [surya066-git/airwise-india](https://github.com/surya066-git/airwise-india) on `main`. A live `/api/aqi?city=Hyderabad` request returned no AQI and the safe diagnostic classified a connection failure to data.gov.in. The Vercel request ID showed the function executing in `iad1` while the request entered through `bom1`. `vercel.json` now pins `/api/aqi` and `/api/assistant` to Mumbai (`bom1`) so these India-source requests run closer to the provider. Vercel project settings and detailed runtime logs cannot be inspected from this workspace because the Vercel CLI, project link, and access token are unavailable.
+As checked on 25 November 2026, the public production alias [airwise-india-one.vercel.app](https://airwise-india-one.vercel.app/) responds over HTTPS. `GET /` and `GET /api/health/providers` returned HTTP 200. In headless Chromium, the dashboard became interactive, accepted Hyderabad in the location dialog, and displayed the unverified AQI response without JavaScript errors. The homepage HTML had an incorrect canonical URL of `http://localhost:3000`; `app/layout.tsx` now uses Vercel's project production domain when `NEXT_PUBLIC_APP_URL` is a local address. This fix takes effect on the next deployment.
+
+`GET /api/aqi?city=Hyderabad` returned HTTP 200 and its Vercel request ID showed `bom1::bom1`, confirming the CPCB function ran in Mumbai and connected to data.gov.in. The source reported 98 matching records but an effective page size of 10; pages at offsets 0 and 10 contained a repeated station/pollutant/time identity. AIRWISE returned `official.status: unverified`, `aqi: null`, and no station rather than treating the incomplete snapshot as official. This is now an upstream data consistency/coverage issue, not the earlier connection failure. The response did not include coordinates, so OpenAQ was unavailable for that request.
+
+The provider-health route reported Cloudflare, Gemini, and OpenRouter as configured, with Ollama unavailable. This endpoint only reports configuration and in-process circuit state; it does not prove that providers can generate responses. No production AI generation was sent. Vercel project settings and detailed runtime logs remain unavailable from this workspace because the Vercel CLI, project link, and access token are not configured.
+
+A follow-up live check around 15:39 IST on 25 November 2026 again returned HTTP 200 for the page and provider-health route. The canonical URL was still `http://localhost:3000`, confirming the metadata fix has not reached production. `GET /api/aqi?city=Hyderabad` returned HTTP 200 from `bom1::bom1`, but the official result was `unavailable` with pagination status `rate_limited`; data.gov.in asked the adapter to stop after the first page. A previous request returned pagination status `overlap`, so the upstream failure varies between checks. The adapter withheld AQI in both cases.
 
 ## Project and build settings
 
@@ -96,14 +102,15 @@ The Prompt 16 successful Cloudflare check was a local development-mode verificat
 - `npm run build`: passed; Next.js generated the dashboard and API route handlers.
 - `npm run test:e2e -- e2e/dashboard.spec.ts --workers=1`: passed, 51 dashboard tests across mobile, tablet, and desktop; the dedicated test server used the offline guard and mocked browser API responses.
 - A production-mode local `GET /api/health/providers` returned HTTP 200 with four providers and safe projected metadata. Its route and unit test make no external requests; credentials and internal failure codes were absent.
-- The configured secret values were compared in memory against repository source plus `.next/static` and `.next/server`; no matches were found. No values were printed. Git history could not be scanned because this checkout has no `.git` metadata.
+- The configured secret values were compared in memory against repository source plus `.next/static` and `.next/server`; no matches were found. No values were printed. That earlier check did not scan Git history.
 
-The local checks pass. Production page and provider-health requests return HTTP 200. A live production AQI request returns HTTP 200 with CPCB unavailable and AQI null; after adding the safe transport diagnostic, the response identified a connection failure to data.gov.in. The production region override to `bom1` is pending Vercel redeployment and live verification. No production AI generation was performed.
+The listed local checks were recorded for the previous release preparation. Current live verification confirms the page, health endpoint, and AQI route return HTTP 200; the AQI data remains unverified due to pagination overlap. The `bom1` region override is live. The canonical URL fallback is a local code change and needs a new production deployment before it can be confirmed live. No production AI generation was performed.
 
 ## Current deployment blockers
 
 - Vercel project settings and detailed function logs are not accessible from this workspace. The Vercel CLI is not installed, and no project link or access token is configured.
-- The live data.gov.in request still fails from Vercel. The new `bom1` region setting needs a production deployment and a follow-up AQI request to verify whether the regional mismatch caused it.
+- The data.gov.in connection failure is cleared in the live Mumbai function, but recent responses have alternated between pagination overlap and upstream rate limiting. The adapter deliberately fails closed; a verified AQI requires consistent complete source records and an explicit AQI field.
+- The homepage canonical URL is currently `http://localhost:3000` in the deployed HTML. The code now falls back to Vercel's production domain; deploy the change and confirm the canonical URL becomes `https://airwise-india-one.vercel.app` (or the configured production domain).
 - The in-memory rate limiter is not distributed across serverless instances.
 - Official CPCB AQI remains unresolved for the configured data.gov.in resource.
 - A production AI generation remains gated on explicit user approval.
