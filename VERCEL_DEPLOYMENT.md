@@ -10,6 +10,8 @@ The provider-health route reported Cloudflare, Gemini, and OpenRouter as configu
 
 A follow-up live check around 15:39 IST on 25 November 2026 again returned HTTP 200 for the page and provider-health route. The canonical URL was still `http://localhost:3000`, confirming the metadata fix has not reached production. `GET /api/aqi?city=Hyderabad` returned HTTP 200 from `bom1::bom1`, but the official result was `unavailable` with pagination status `rate_limited`; data.gov.in asked the adapter to stop after the first page. A previous request returned pagination status `overlap`, so the upstream failure varies between checks. The adapter withheld AQI in both cases.
 
+After commit `312276b` was pushed to `main` on 26 November 2026, the production alias returned HTTP 200 with canonical URL `https://airwise-india-one.vercel.app`. The homepage sent the nonce-based CSP and same-origin security headers; the CSP nonce matched the rendered script/style markup and changed on a second request. `robots.txt`, `sitemap.xml`, `icon.svg`, and `/api/health/providers` each returned HTTP 200. The live `GET /api/aqi?city=Kakinada` returned HTTP 200 with pagination `complete`, but `official.status` was `unverified` and `aqi` was null because the source did not provide an explicit valid AQI field. AIRWISE correctly did not calculate or infer an index. The production AI generation route was not invoked.
+
 ## Project and build settings
 
 In [Vercel](https://vercel.com/new), connect the GitHub account and import the existing private repository `surya066-git/airwise-india`. Select `main` for Production. Grant Vercel access to this private repository when prompted. `.gitignore` excludes `.env*` except `.env.example`; `.env.local` is not tracked. The reachable Git history was audited: it contains no environment files other than `.env.example`, and no configured secret values matched the committed files. The one authorization-header pattern detected by a heuristic is a synthetic provider error fixture in `lib/ai/gemini.test.ts`, covered by the header-redaction test.
@@ -106,13 +108,13 @@ The Prompt 16 successful Cloudflare check was a local development-mode verificat
 - A production-mode local `GET /api/health/providers` returned HTTP 200 with four providers and safe projected metadata. Its route and unit test make no external requests; credentials and internal failure codes were absent.
 - The configured secret values were compared in memory against repository source plus `.next/static` and `.next/server`; no matches were found. No values were printed. That earlier check did not scan Git history.
 
-The production checks above were previously run against the existing deployment; the code changes in this release require a new deployment before the new CSP, metadata, security headers, and cache behavior can be confirmed live. No production AI generation was performed.
+The current homepage CSP, metadata, security headers, static discovery files, and API availability were verified against the production alias after the source commit was pushed. No production AI generation was performed.
 
 ## Current deployment blockers
 
 - Vercel project settings and detailed function logs are not accessible from this workspace. The Vercel CLI is not installed, and no project link or access token is configured.
-- The data.gov.in connection failure is cleared in the live Mumbai function, but recent responses have alternated between pagination overlap and upstream rate limiting. The adapter deliberately fails closed; a verified AQI requires consistent complete source records and an explicit AQI field.
-- Confirm the canonical URL and nonce-based CSP after the next deployment; the live site previously exposed a `localhost` canonical URL and did not return a CSP.
+- The data.gov.in resource still does not provide an explicit valid AQI field at the required station and timestamp. The adapter deliberately fails closed; a verified AQI requires a supported source/API with explicit AQI and sufficient measurement metadata.
+- The canonical URL and nonce-based CSP are confirmed live for this release. Recheck them after future changes to the homepage, CSP, or deployment configuration.
 - The in-memory rate limiter is not distributed across serverless instances.
 - Official CPCB AQI remains unresolved for the configured data.gov.in resource.
 - A production AI generation remains gated on explicit user approval.
