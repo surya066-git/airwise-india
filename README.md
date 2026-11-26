@@ -154,6 +154,8 @@ npm run build
 
 The private GitHub repository is [surya066-git/airwise-india](https://github.com/surya066-git/airwise-india), with `main` as its default branch. The public production alias is [airwise-india-one.vercel.app](https://airwise-india-one.vercel.app/). Follow [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for production verification. `/api/aqi` and `/api/assistant` are pinned to Vercel's Mumbai region (`bom1`) because both call India-specific CPCB/data.gov.in data.
 
+On 27 November 2026, commit `92e405f` was pushed to `main`; GitHub reported the Vercel deployment complete. The production homepage returned HTTP 200 and included the new indoor cleaning guidance. The provider-health route returned HTTP 200 without credential fields. No production AQI or AI request was made for this deployment check.
+
 ## Current limitations
 
 - The original user-provided API keys were exposed in chat and one failed browser diagnostic log. The user later confirmed that all three keys were rotated and `.env.local` was updated. Their values are not reproduced in project documentation.

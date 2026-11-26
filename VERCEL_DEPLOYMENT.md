@@ -2,7 +2,11 @@
 
 ## Status
 
-As checked on 25 November 2026, the public production alias [airwise-india-one.vercel.app](https://airwise-india-one.vercel.app/) responds over HTTPS. `GET /` and `GET /api/health/providers` returned HTTP 200. In headless Chromium, the dashboard became interactive, accepted Hyderabad in the location dialog, and displayed the unverified AQI response without JavaScript errors. The homepage HTML had an incorrect canonical URL of `http://localhost:3000`; `app/layout.tsx` now uses Vercel's project production domain when `NEXT_PUBLIC_APP_URL` is a local address. This fix takes effect on the next deployment.
+### Latest deployment — 27 November 2026
+
+Commit `92e405f` was pushed to `main`. GitHub's Vercel commit status reported **Deployment has completed**. The production alias [airwise-india-one.vercel.app](https://airwise-india-one.vercel.app/) returned HTTP 200, and its rendered homepage contained the newly added damp-dusting/wet-mopping recommendation. `GET /api/health/providers` returned HTTP 200 with `Cache-Control: no-store`; its response contained four provider entries and no credential-named fields. These checks verified the deployment and safe health projection without calling CPCB, OpenAQ, or an AI provider. The Vercel CLI and dashboard credentials remain unavailable, so project settings and detailed function logs were not inspected.
+
+Historical check on 25 November 2026: the public alias responded over HTTPS. `GET /` and `GET /api/health/providers` returned HTTP 200. In headless Chromium, the dashboard became interactive, accepted Hyderabad in the location dialog, and displayed the unverified AQI response without JavaScript errors. The homepage HTML had an incorrect canonical URL of `http://localhost:3000`; `app/layout.tsx` now uses Vercel's project production domain when `NEXT_PUBLIC_APP_URL` is a local address. That fix was subsequently confirmed in production.
 
 `GET /api/aqi?city=Hyderabad` returned HTTP 200 and its Vercel request ID showed `bom1::bom1`, confirming the CPCB function ran in Mumbai and connected to data.gov.in. The source reported 98 matching records but an effective page size of 10; pages at offsets 0 and 10 contained a repeated station/pollutant/time identity. AIRWISE returned `official.status: unverified`, `aqi: null`, and no station rather than treating the incomplete snapshot as official. This is now an upstream data consistency/coverage issue, not the earlier connection failure. The response did not include coordinates, so OpenAQ was unavailable for that request.
 
@@ -112,7 +116,7 @@ The current homepage CSP, metadata, security headers, static discovery files, an
 
 ## Current deployment blockers
 
-- Vercel project settings and detailed function logs are not accessible from this workspace. The Vercel CLI is not installed, and no project link or access token is configured.
+- Vercel project settings and detailed function logs are not accessible from this workspace. The Vercel CLI, project link, and access token are not configured; GitHub-to-Vercel deployment is active and the latest commit status completed successfully.
 - The data.gov.in resource still does not provide an explicit valid AQI field at the required station and timestamp. The adapter deliberately fails closed; a verified AQI requires a supported source/API with explicit AQI and sufficient measurement metadata.
 - The canonical URL and nonce-based CSP are confirmed live for this release. Recheck them after future changes to the homepage, CSP, or deployment configuration.
 - The in-memory rate limiter is not distributed across serverless instances.
