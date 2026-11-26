@@ -5,6 +5,7 @@ import { buildStandardAdvice, resolveAssistantAdvice } from "@/lib/ai/assistant"
 import { isAirwiseOfflineTestMode, isCloudflareOnlyLiveTest } from "@/lib/ai/live-test-mode";
 import { getCloudflareHealth, requestCloudflareAdvice } from "@/lib/ai/cloudflare";
 import { clientKey, isRateLimited } from "@/lib/utils/rate-limit";
+import { readJsonBody } from "@/lib/utils/read-json-body";
 import { assistantBodySchema } from "@/lib/validation/schemas";
 import type { AirQualityResponse } from "@/types/air-quality";
 
@@ -65,16 +66,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const contentLength = Number(request.headers.get("content-length") ?? 0);
-  if (contentLength > 20_000) return NextResponse.json({ error: "request_too_large" }, { status: 413 });
-
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  const body = await readJsonBody(request, 20_000);
+  if (!body.ok) {
+    return body.reason === "too_large"
+      ? NextResponse.json({ error: "request_too_large" }, { status: 413 })
+      : NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
-  const parsed = assistantBodySchema.safeParse(body);
+  const parsed = assistantBodySchema.safeParse(body.value);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "invalid_request", details: parsed.error.flatten().fieldErrors },

@@ -200,6 +200,8 @@ describe("CPCB data.gov.in adapter", () => {
     expect(parsed.searchParams.get("offset")).toBe("0");
     expect(parsed.searchParams.get("filters[city]")).toBe("Pune");
     expect(new Headers(init.headers).get("accept")).toBe("application/json");
+    expect(init.cache).toBe("force-cache");
+    expect((init as RequestInit & { next?: { revalidate?: number } }).next?.revalidate).toBe(60);
   });
 
   it("uses the supplied CPCB resource ID by default when no override is configured", async () => {

@@ -71,6 +71,15 @@ test("homepage loads with accessible dashboard navigation", async ({ page }) => 
   await expect(page.getByText("General guidance", { exact: true }).first()).toBeVisible();
 });
 
+test("keyboard users can skip the navigation and reach main content", async ({ page }) => {
+  await page.goto("/");
+  const skipLink = page.getByRole("link", { name: "Skip to content" });
+  await page.keyboard.press("Tab");
+  await expect(skipLink).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("main#top")).toBeFocused();
+});
+
 test("dashboard stays within the viewport and keeps body copy readable", async ({ page }) => {
   await page.goto("/");
   const measurements = await page.evaluate(() => ({

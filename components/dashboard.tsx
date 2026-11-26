@@ -13,7 +13,8 @@ import type { AirQualityResponse, DataStatus, PollutantReading } from "@/types/a
 import { buildRecommendations } from "@/lib/recommendations/engine";
 import type { Recommendation, UserPreferenceKey } from "@/types/recommendation";
 import { DEFAULT_PREFERENCES, type UserPreferences } from "@/types/preferences";
-import { airQualityResponseSchema, normalizePreferences } from "@/lib/validation/schemas";
+import { normalizePreferences } from "@/lib/preferences";
+import { isAirQualityResponse } from "@/lib/validation/client-air-quality";
 
 const EMPTY_LOCATION: LocationChoice = { city: "", latitude: null, longitude: null };
 const STATUS: Record<DataStatus, string> = {
@@ -114,9 +115,8 @@ export default function Dashboard() {
       const response = await fetch(`/api/aqi?${params.toString()}`, { cache: "no-store" });
       if (!response.ok) throw new Error("Data service unavailable");
       const payload: unknown = await response.json();
-      const validated = airQualityResponseSchema.safeParse(payload);
-      if (!validated.success) throw new Error("Data service returned an invalid response");
-      setAir(validated.data);
+      if (!isAirQualityResponse(payload)) throw new Error("Data service returned an invalid response");
+      setAir(payload);
       setNotice("");
     } catch {
       setAir((previous) => previous ? {
@@ -232,6 +232,7 @@ export default function Dashboard() {
 
   return (
     <div className="app-shell">
+      <a className="skip-to-content" href="#top">Skip to content</a>
       <header className="topbar">
         <div className="topbar-inner">
           <a href="#top" className="brand" aria-label="AIRWISE INDIA home">
@@ -274,7 +275,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main id="top" className="main-content">
+      <main id="top" className="main-content" tabIndex={-1}>
         <section className="hero-section" id="overview" aria-labelledby="page-title">
           <div className="hero-copy">
             <p className="eyebrow">Air quality, with context</p>
@@ -328,7 +329,7 @@ export default function Dashboard() {
                     {official.pagination.conflictingRows > 0 ? ` · ${official.pagination.conflictingRows} conflicting rows` : ""}
                     {` · ${official.pagination.pageCount} page requests`}</p>
                 </details>}
-                {!loading && !hasOfficialAqi && <div className="aqi-help-actions">
+                {!hasOfficialAqi && <div className="aqi-help-actions">
                   <button type="button" className="text-button" onClick={() => setLocationOpen(true)}>Choose another area <ArrowRight size={16} /></button>
                   <span>You can also refresh to check the source again.</span>
                 </div>}

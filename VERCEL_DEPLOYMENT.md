@@ -76,7 +76,7 @@ The local `.env.local` file does not populate Vercel automatically. Create each 
 - API routes return safe error/status messages rather than stacks. Adapters do not log authorization headers, full prompts, or raw model responses.
 - `/api/health/providers` only reads in-process configuration/circuit state. It makes no provider request and now omits raw last-failure codes and provider messages. It does not consume AI quota.
 - The rate limiter is an in-memory map, so limits are per Node.js process and are not shared between Vercel instances. Configure Vercel Firewall rate limiting or add a shared rate-limit store before relying on it for public abuse prevention.
-- Baseline security headers are set in `next.config.ts` (`nosniff`, `Referrer-Policy`, frame denial, and a geolocation `Permissions-Policy`).
+- `next.config.ts` sets `nosniff`, `Referrer-Policy`, frame denial, a restricted `Permissions-Policy`, and same-origin COOP/CORP headers. `proxy.ts` creates a per-request nonce for the homepage CSP; the homepage is dynamically rendered so the nonce and HTML stay aligned. Verify this policy again if adding third-party scripts, fonts, images, or API origins.
 - `.gitignore` excludes `.env*` except `.env.example`. The one-commit Git history was scanned: `.env.example` is the only tracked environment-style file, no configured secret values matched committed files, and the sole header-shaped heuristic match is a mock diagnostic fixture in `lib/ai/gemini.test.ts`. This audit cannot prove whether credentials were exposed outside this repository; rotate any provider credential previously shared outside the approved secret manager before enabling it in Production.
 
 ## Production data behavior
@@ -94,23 +94,25 @@ The dashboard and assistant preserve separate CPCB and OpenAQ states. CPCB is th
 
 The Prompt 16 successful Cloudflare check was a local development-mode verification. It does not verify Vercel deployment, Vercel environment variables, Production function behavior, Production data providers, or a public URL.
 
-## Locally verified for this release preparation
+## Locally verified for the 26 November 2026 release preparation
 
 - `npm run typecheck`: passed.
 - `npm run lint`: passed.
-- `npm test`: passed, 17 files and 160 tests.
-- `npm run build`: passed; Next.js generated the dashboard and API route handlers.
-- `npm run test:e2e -- e2e/dashboard.spec.ts --workers=1`: passed, 51 dashboard tests across mobile, tablet, and desktop; the dedicated test server used the offline guard and mocked browser API responses.
+- `npm test`: passed, 20 files and 171 tests.
+- `npm run build`: passed; Next.js generated the dynamically rendered, nonce-protected homepage and API route handlers.
+- `npx playwright test --workers=1`: passed, 57 browser tests across mobile, tablet, and desktop; the dedicated test server used the offline guard and mocked browser API responses.
+- `npm audit`: passed with zero reported vulnerabilities.
+- Lighthouse on the local production build: Performance 99, Accessibility 100, Best Practices 100, SEO 100. A follow-up layout-shift observer reported no shifts after the initial loading state was adjusted.
 - A production-mode local `GET /api/health/providers` returned HTTP 200 with four providers and safe projected metadata. Its route and unit test make no external requests; credentials and internal failure codes were absent.
 - The configured secret values were compared in memory against repository source plus `.next/static` and `.next/server`; no matches were found. No values were printed. That earlier check did not scan Git history.
 
-The listed local checks were recorded for the previous release preparation. Current live verification confirms the page, health endpoint, and AQI route return HTTP 200; the AQI data remains unverified due to pagination overlap. The `bom1` region override is live. The canonical URL fallback is a local code change and needs a new production deployment before it can be confirmed live. No production AI generation was performed.
+The production checks above were previously run against the existing deployment; the code changes in this release require a new deployment before the new CSP, metadata, security headers, and cache behavior can be confirmed live. No production AI generation was performed.
 
 ## Current deployment blockers
 
 - Vercel project settings and detailed function logs are not accessible from this workspace. The Vercel CLI is not installed, and no project link or access token is configured.
 - The data.gov.in connection failure is cleared in the live Mumbai function, but recent responses have alternated between pagination overlap and upstream rate limiting. The adapter deliberately fails closed; a verified AQI requires consistent complete source records and an explicit AQI field.
-- The homepage canonical URL is currently `http://localhost:3000` in the deployed HTML. The code now falls back to Vercel's production domain; deploy the change and confirm the canonical URL becomes `https://airwise-india-one.vercel.app` (or the configured production domain).
+- Confirm the canonical URL and nonce-based CSP after the next deployment; the live site previously exposed a `localhost` canonical URL and did not return a CSP.
 - The in-memory rate limiter is not distributed across serverless instances.
 - Official CPCB AQI remains unresolved for the configured data.gov.in resource.
 - A production AI generation remains gated on explicit user approval.

@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { DEFAULT_PREFERENCES, type UserPreferences } from "@/types/preferences";
+import { DEFAULT_PREFERENCES } from "@/types/preferences";
+export { normalizePreferences } from "@/lib/preferences";
 
 const coordinate = z.coerce.number().finite();
 const dataStatusSchema = z.enum(["live", "stale", "unavailable", "unverified", "not_configured"]);
@@ -101,18 +102,6 @@ export const userPreferencesSchema = z.object({
   children: preferenceValueSchemas.children.default(false),
   olderAdults: preferenceValueSchemas.olderAdults.default(false)
 }).strict();
-
-/** Migrate the original `routine` preference while rejecting malformed stored values. */
-export function normalizePreferences(value: unknown): UserPreferences {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return DEFAULT_PREFERENCES;
-  const candidate = { ...value } as Record<string, unknown>;
-  if (candidate.occupation === undefined && typeof candidate.routine === "string") {
-    candidate.occupation = candidate.routine;
-  }
-  delete candidate.routine;
-  const parsed = userPreferencesSchema.safeParse(candidate);
-  return parsed.success ? parsed.data : DEFAULT_PREFERENCES;
-}
 
 export const assistantBodySchema = z.object({
   city: z.string().trim().max(100).optional().default(""),

@@ -1,7 +1,6 @@
 import type { AirQualityResponse } from "@/types/air-quality";
 import type { UserPreferences } from "@/types/preferences";
 import type { Recommendation, RecommendationBasis, UserPreferenceKey } from "@/types/recommendation";
-import { recommendationSchema } from "@/lib/validation/advice";
 
 function intendedProfile(preferences: UserPreferences, location: string | null, evidence: UserPreferenceKey[]): string {
   const group: string[] = [];
@@ -194,5 +193,5 @@ export function buildRecommendations(
     }
   ];
 
-  return recommendations.map((recommendation) => recommendationSchema.parse(recommendation));
+  return recommendations;
 }

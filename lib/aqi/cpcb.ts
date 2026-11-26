@@ -318,7 +318,13 @@ function rowIdentity(row: JsonRecord): string | null {
 }
 
 async function requestCpcbPage(url: URL): Promise<Response> {
-  const init = { headers: { Accept: "application/json" }, cache: "no-store" as RequestCache };
+  // CPCB readings are hourly, so a short shared cache prevents every serverless
+  // instance from paginating the same public dataset for every visitor.
+  const init = {
+    headers: { Accept: "application/json" },
+    cache: "force-cache" as RequestCache,
+    next: { revalidate: 60 }
+  };
   const response = await fetchProviderWithRetry(url, init, 8_000);
   if (response.status !== 429) return response;
 
