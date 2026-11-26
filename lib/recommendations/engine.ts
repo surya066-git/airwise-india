@@ -151,6 +151,7 @@ export function buildRecommendations(
       expectedBenefit: "May reduce indoor sources and help you choose a ventilation time using local source data.",
       practicalSteps: [
         "Avoid smoking indoors and reduce smoke from cooking or burning materials where possible.",
+        "Use a damp cloth or wet mop for routine dusting where practical; avoid dry sweeping that can stir up settled dust.",
         "Ventilate when outdoor conditions are suitable; follow the device instructions if you use an air cleaner."
       ],
       environmentalImpact: null,

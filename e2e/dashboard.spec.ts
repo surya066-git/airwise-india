@@ -117,6 +117,54 @@ test("preference dialog traps keyboard focus and restores it on close", async ({
   await expect(personalize).toBeFocused();
 });
 
+test("dashboard still loads when browser storage is blocked", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      get() { throw new DOMException("Storage is blocked", "SecurityError"); }
+    });
+  });
+
+  await page.goto("/");
+
+  await expect(page.getByRole("heading", { name: "Pune" })).toBeVisible();
+  await expect(page.getByText("Official source reading for this test.")).toBeVisible();
+});
+
+test("a slower response from an old location cannot replace the selected location", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Pune" })).toBeVisible();
+  await page.unroute("**/api/aqi**");
+  await page.route("**/api/aqi**", async (route) => {
+    const city = new URL(route.request().url()).searchParams.get("city") ?? "";
+    const payload = airResponse();
+    payload.location.label = city;
+    payload.official.city = city;
+    payload.official.aqi = city === "Delhi" ? 12 : 321;
+    if (city === "Delhi") await new Promise((resolve) => setTimeout(resolve, 600));
+    try {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(payload) });
+    } catch {
+      // The client aborts the superseded route; its late result is intentionally discarded.
+    }
+  });
+
+  await openMobileMenuIfNeeded(page);
+  await page.getByRole("button", { name: "Choose an area" }).first().click();
+  await page.getByLabel("City or town").fill("Delhi");
+  await page.getByRole("button", { name: "Use this location" }).click();
+
+  await page.getByRole("button", { name: /Delhi/ }).first().click();
+  await page.getByLabel("City or town").fill("Chennai");
+  await page.getByRole("button", { name: "Use this location" }).click();
+
+  await expect(page.getByRole("heading", { name: "Chennai" })).toBeVisible();
+  await expect(page.locator(".aqi-number")).toHaveText("321");
+  await page.waitForTimeout(700);
+  await expect(page.getByRole("heading", { name: "Chennai" })).toBeVisible();
+  await expect(page.locator(".aqi-number")).toHaveText("321");
+});
+
 test("dashboard navigation reaches recommendations", async ({ page }) => {
   await page.goto("/");
   await openMobileMenuIfNeeded(page);

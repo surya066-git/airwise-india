@@ -587,3 +587,27 @@ The AI assistant was used to turn the provided product brief into a runnable Nex
 - Final verification passed: `npm run typecheck`, `npm run lint`, `npm test` (17 files, 155 tests), `npm run build`, and `npm run test:e2e -- --workers=1` (51 tests across mobile, tablet, and desktop). The serial E2E run used the offline test server and mocked UI/API states; it did not call Cloudflare, Gemini, OpenRouter, Ollama, CPCB, or OpenAQ.
 - Playwright captured full-page and first-fold screenshots at 390×844, 768×1024, and 1440×900. The screens were manually inspected at all three sizes. The final planner order is morning/outdoor, commute, workday/indoors, then evening. The tests check responsive overflow, mobile navigation, keyboard dialog focus, source provenance, AI attribution/failure states, and the visual empty state.
 - `git diff --check` passes. No provider requests, GitHub push, commit, or Vercel deployment were made for this redesign. The production app was built locally; this does not verify a hosted deployment or live data/AI behavior.
+
+## Prompt iteration 21 — code quality, security, accessibility, and challenge alignment
+
+### Human request and constraints
+
+- The user requested an evidence-based whole-repository audit and genuine improvements to quality, security, testing, accessibility, efficiency, product behavior, and PromptWars Challenge 6 alignment. No scoring-system manipulation, fabricated functionality, weakened tests, live external testing, GitHub push, or Vercel deployment was permitted.
+- The supplied repository-specific Next.js instructions were followed: the installed Next.js 16.4.6 Route Handler, Proxy, and Server/Client Component guides were read before code changes.
+- `AUDIT_FINDINGS.md` records the baseline findings before implementation changes.
+
+### Findings and implementation
+
+- Fixed a location-response race: the dashboard aborts superseded AQI refreshes and ignores late results. Added deterministic browser coverage for the stale-response order.
+- Made browser storage optional for dashboard operation. A blocked or malformed stored value no longer prevents the first AQI request; invalid coordinates are discarded and failed writes are announced while current-visit use continues.
+- Replaced random API route-test IP generation with deterministic sequential identities.
+- Added axe-core Playwright scans for WCAG 2.0/2.1/2.2 A and AA across the dashboard and both dialogs. The scan revealed that a redundant brand `aria-label` overrode visible link text; removing it resolved the label-in-name failure.
+- The requirement traceability pass found missing concrete indoor cleaning advice. Added damp dusting/wet mopping and avoiding dry sweeping to deterministic guidance, with a focused unit assertion.
+- Added concise code quality, security, testing, accessibility, and problem-alignment reports, including the requirement traceability matrix. `README.md` links to these reports.
+- Kept the process-local rate limiter documented as a deployment limit; a shared store or Vercel Firewall rule must be configured at deployment for cross-instance abuse control.
+
+### Verification
+
+- Typecheck (`next typegen` plus `tsc`), lint, 172 unit tests, npm dependency audit, and the final production build passed. `npm audit` reported zero vulnerabilities.
+- The complete E2E run passed all 72 tests across mobile, tablet, and desktop in 11.2 minutes. This includes all nine axe scans with zero violations and the blocked-storage and out-of-order response regressions at each viewport.
+- Browser E2E used the offline server guard. No live CPCB, OpenAQ, or AI provider request was made. The user subsequently requested a GitHub push and Vercel update; deployment status will be recorded after checking the configured remote and deployment path.

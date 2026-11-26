@@ -79,6 +79,12 @@ describe("structured recommendation engine", () => {
     expect(recommendation?.basis).toContain("supplementary_measurement");
   });
 
+  it("includes a practical cleaning routine in indoor-air guidance", () => {
+    const indoor = buildRecommendations(makeAir("unverified", null), DEFAULT_PREFERENCES)[1];
+    expect(indoor?.practicalSteps.join(" ")).toContain("damp cloth or wet mop");
+    expect(indoor?.practicalSteps.join(" ")).toContain("avoid dry sweeping");
+  });
+
   it("gives role-specific standard steps for students and outdoor workers without medical claims", () => {
     const student = buildRecommendations(makeAir("unverified", null), {
       ...DEFAULT_PREFERENCES, occupation: "Student", ageGroup: "Under 18", commute: "Public transit"

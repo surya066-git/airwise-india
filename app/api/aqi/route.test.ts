@@ -4,9 +4,11 @@ import { airQualityResponseSchema } from "@/lib/validation/schemas";
 
 afterEach(() => vi.unstubAllEnvs());
 
+let nextTestClient = 1;
+
 function requestFor(query: string): Request {
   return new Request("http://localhost/api/aqi?" + query, {
-    headers: { "x-forwarded-for": "192.0.2." + Math.floor(Math.random() * 250) }
+    headers: { "x-forwarded-for": `192.0.2.${nextTestClient++}` }
   });
 }
 

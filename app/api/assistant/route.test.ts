@@ -19,12 +19,14 @@ beforeEach(() => {
   vi.stubEnv("CLOUDFLARE_API_TOKEN", "");
 });
 
+let nextTestClient = 1;
+
 function requestFor(body: unknown): Request {
   return new Request("http://localhost/api/assistant", {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-forwarded-for": "198.51.100." + Math.floor(Math.random() * 250)
+      "x-forwarded-for": `198.51.100.${nextTestClient++}`
     },
     body: JSON.stringify(body)
   });

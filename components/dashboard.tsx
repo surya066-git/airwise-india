@@ -4,7 +4,7 @@ import {
   Activity, ArrowRight, Clock3, ExternalLink, MapPin, Menu, RefreshCw,
   ShieldCheck, Users, Wind, X
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AssistantPanel from "@/components/assistant-panel";
 import LocationDialog, { type LocationChoice } from "@/components/location-dialog";
 import PreferencesDialog from "@/components/preferences-dialog";
@@ -17,10 +17,43 @@ import { normalizePreferences } from "@/lib/preferences";
 import { isAirQualityResponse } from "@/lib/validation/client-air-quality";
 
 const EMPTY_LOCATION: LocationChoice = { city: "", latitude: null, longitude: null };
+const LOCATION_STORAGE_KEY = "airwise-location";
+const PROFILE_STORAGE_KEY = "airwise-profile";
 const STATUS: Record<DataStatus, string> = {
   live: "Live reading", stale: "Stale reading", unavailable: "Unavailable",
   unverified: "Needs verification", not_configured: "Setup needed"
 };
+
+function readStoredValue(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredValue(key: string, value: string): boolean {
+  try {
+    window.localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function restoreLocation(value: unknown): LocationChoice {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return EMPTY_LOCATION;
+  const saved = value as Record<string, unknown>;
+  const city = typeof saved.city === "string" ? saved.city.trim().slice(0, 100) : "";
+  const hasValidCoordinates = typeof saved.latitude === "number" && Number.isFinite(saved.latitude) &&
+    saved.latitude >= -90 && saved.latitude <= 90 && typeof saved.longitude === "number" &&
+    Number.isFinite(saved.longitude) && saved.longitude >= -180 && saved.longitude <= 180;
+  return {
+    city,
+    latitude: hasValidCoordinates ? saved.latitude as number : null,
+    longitude: hasValidCoordinates ? saved.longitude as number : null
+  };
+}
 
 function StatusPill({ status }: { status: DataStatus }) {
   return <span className={`status-pill status-${status}`}><i />{STATUS[status]}</span>;
@@ -100,10 +133,15 @@ export default function Dashboard() {
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [notice, setNotice] = useState("");
+  const [storageNotice, setStorageNotice] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("overview");
+  const activeRefresh = useRef<AbortController | null>(null);
 
   async function refresh(nextLocation: LocationChoice) {
+    activeRefresh.current?.abort();
+    const controller = new AbortController();
+    activeRefresh.current = controller;
     setLoading(true);
     const params = new URLSearchParams();
     if (nextLocation.city) params.set("city", nextLocation.city);
@@ -112,13 +150,15 @@ export default function Dashboard() {
       params.set("longitude", String(nextLocation.longitude));
     }
     try {
-      const response = await fetch(`/api/aqi?${params.toString()}`, { cache: "no-store" });
+      const response = await fetch(`/api/aqi?${params.toString()}`, { cache: "no-store", signal: controller.signal });
       if (!response.ok) throw new Error("Data service unavailable");
       const payload: unknown = await response.json();
       if (!isAirQualityResponse(payload)) throw new Error("Data service returned an invalid response");
+      if (controller.signal.aborted || activeRefresh.current !== controller) return;
       setAir(payload);
       setNotice("");
     } catch {
+      if (controller.signal.aborted || activeRefresh.current !== controller) return;
       setAir((previous) => previous ? {
         ...previous,
         official: previous.official.aqi === null ? previous.official : {
@@ -134,37 +174,39 @@ export default function Dashboard() {
       } : null);
       setNotice("The data service could not be reached. No current AQI is available.");
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted && activeRefresh.current === controller) {
+        activeRefresh.current = null;
+        setLoading(false);
+      }
     }
   }
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       let restored = EMPTY_LOCATION;
-      try {
-        const locationJson = localStorage.getItem("airwise-location");
-        if (locationJson) {
-          const saved = JSON.parse(locationJson) as Partial<LocationChoice>;
-          if (typeof saved.city === "string") {
-            restored = {
-              city: saved.city.slice(0, 100),
-              latitude: typeof saved.latitude === "number" ? saved.latitude : null,
-              longitude: typeof saved.longitude === "number" ? saved.longitude : null
-            };
-          }
+      const locationJson = readStoredValue(LOCATION_STORAGE_KEY);
+      if (locationJson) {
+        try {
+          restored = restoreLocation(JSON.parse(locationJson) as unknown);
+        } catch {
+          restored = EMPTY_LOCATION;
         }
-        const preferencesJson = localStorage.getItem("airwise-profile");
-        if (preferencesJson) {
-          setPreferences(normalizePreferences(JSON.parse(preferencesJson)));
+      }
+      const preferencesJson = readStoredValue(PROFILE_STORAGE_KEY);
+      if (preferencesJson) {
+        try {
+          setPreferences(normalizePreferences(JSON.parse(preferencesJson) as unknown));
+        } catch {
+          setPreferences(DEFAULT_PREFERENCES);
         }
-      } catch {
-        localStorage.removeItem("airwise-location");
-        localStorage.removeItem("airwise-profile");
       }
       setLocation(restored);
       void refresh(restored);
     }, 0);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      activeRefresh.current?.abort();
+    };
   }, []);
 
   useEffect(() => {
@@ -183,14 +225,18 @@ export default function Dashboard() {
   function applyLocation(next: LocationChoice) {
     setLocation(next);
     setAir(null);
-    localStorage.setItem("airwise-location", JSON.stringify(next));
+    setStorageNotice(writeStoredValue(LOCATION_STORAGE_KEY, JSON.stringify(next))
+      ? ""
+      : "Your location is set for this visit, but this browser could not save it.");
     setLocationOpen(false);
     void refresh(next);
   }
 
   function applyPreferences(next: UserPreferences) {
     setPreferences(next);
-    localStorage.setItem("airwise-profile", JSON.stringify(next));
+    setStorageNotice(writeStoredValue(PROFILE_STORAGE_KEY, JSON.stringify(next))
+      ? ""
+      : "Your preferences are set for this visit, but this browser could not save them.");
     setPreferencesOpen(false);
   }
 
@@ -235,7 +281,7 @@ export default function Dashboard() {
       <a className="skip-to-content" href="#top">Skip to content</a>
       <header className="topbar">
         <div className="topbar-inner">
-          <a href="#top" className="brand" aria-label="AIRWISE INDIA home">
+          <a href="#top" className="brand">
             <span className="brand-icon"><Wind size={21} strokeWidth={1.8} /></span>
             <span className="brand-copy"><strong>AIRWISE</strong><small>INDIA</small></span>
           </a>
@@ -452,7 +498,7 @@ export default function Dashboard() {
           <p>Clear information. Practical choices.</p>
           <a href="https://www.data.gov.in/catalog/real-time-air-quality-index" target="_blank" rel="noreferrer">CPCB data source <ExternalLink size={14} /></a>
         </footer>
-        {notice && <p className="floating-notice" role="status">{notice}</p>}
+        {(notice || storageNotice) && <p className="floating-notice" role="status">{notice || storageNotice}</p>}
       </main>
 
       {locationOpen && <LocationDialog initial={location} onClose={() => setLocationOpen(false)} onApply={applyLocation} />}

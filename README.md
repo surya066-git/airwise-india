@@ -139,7 +139,16 @@ npm test
 npm run build
 ```
 
-`npm test` covers mocked provider responses. Run `npm run test:e2e` for deterministic Chromium tests at 390×844, 768×1024, and 1440×900. On resource-constrained machines, `npm run test:e2e -- --workers=1` runs the same suite serially. Run `AIRWISE_LIVE_TESTS=1 npm run test:live` only when you intend to contact configured services; live checks never print API keys. Browser fixtures are deterministic and do not depend on external APIs.
+`npm test` covers deterministic mocked provider responses. Run `npm run test:e2e` for Chromium tests at 390×844, 768×1024, and 1440×900, including WCAG 2.2 AA axe scans. On resource-constrained machines, `npm run test:e2e -- --workers=1` runs the same suite serially. Run `AIRWISE_LIVE_TESTS=1 npm run test:live` only when you intend to contact configured services; live checks never print API keys. Browser tests use the offline server guard and deterministic fixtures; they do not depend on external APIs.
+
+## Engineering evidence
+
+- [Code quality review](./CODE_QUALITY.md)
+- [Security audit and deployment limits](./SECURITY_AUDIT.md)
+- [Testing report](./TESTING.md)
+- [Accessibility review](./ACCESSIBILITY.md)
+- [PromptWars Challenge 6 traceability matrix](./PROBLEM_ALIGNMENT.md)
+- [Repository findings and corrections](./AUDIT_FINDINGS.md)
 
 ## Deployment
 
