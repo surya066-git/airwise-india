@@ -43,6 +43,35 @@ describe("runtime API schemas", () => {
     expect(normalizePreferences({ malformed: true })).toEqual(DEFAULT_PREFERENCES);
   });
 
+  it("fills missing preference fields from defaults", () => {
+    expect(normalizePreferences({ occupation: "Student", children: true })).toEqual({
+      ...DEFAULT_PREFERENCES,
+      occupation: "Student",
+      children: true
+    });
+  });
+
+  it.each([
+    { ageGroup: "adult" },
+    { occupation: "Astronaut" },
+    { commute: "Teleportation" },
+    { outdoorActivity: "Every day" },
+    { children: "yes" },
+    { olderAdults: 1 },
+    { unknownField: false },
+    [],
+    null
+  ])("resets malformed preference data safely", (value) => {
+    expect(normalizePreferences(value)).toEqual(DEFAULT_PREFERENCES);
+  });
+
+  it("prefers the current occupation when both current and legacy fields exist", () => {
+    expect(normalizePreferences({ occupation: "Student", routine: "Outdoor worker" })).toEqual({
+      ...DEFAULT_PREFERENCES,
+      occupation: "Student"
+    });
+  });
+
   it("validates assistant message bounds and personalization values", () => {
     const valid = assistantBodySchema.safeParse({
       city: "Pune", latitude: 18.52, longitude: 73.85,

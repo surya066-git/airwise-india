@@ -10,15 +10,16 @@
 
 ## Final local verification
 
-Results will be filled from the completed post-change run. Do not infer coverage or live-provider success from a passing mock suite.
+Do not infer coverage or live-provider success from a passing mock suite.
 
 | Command | Result |
 | --- | --- |
 | `npm run typecheck` | Passed: `next typegen` generated route definitions, then TypeScript completed with no errors. |
 | `npm run lint` | Passed after the application and test changes. |
-| `npm test` | Passed: 20 files, 172 tests; 20.41 seconds in the final recorded warm run. |
-| `npm run build` | Passed on final code state with Next.js 16.4.6; App Router page and API routes built successfully. |
-| `npm run test:e2e -- --workers=1` | Passed: 72 browser tests across mobile, tablet, and desktop in 11.2 minutes. No live providers were called. |
+| `npm test` | Passed after the preference validation changes: 20 files, 183 tests; 18.31 seconds. |
+| `npm run build` | Passed after the preference validation changes on Next.js 16.4.6; App Router page and API routes built successfully. |
+| `npm run test:e2e -- --workers=1` | Passed before the latest preference form refinement: 72 browser tests across mobile, tablet, and desktop in 11.2 minutes. No live providers were called. |
+| `npx playwright test e2e/dashboard.spec.ts e2e/accessibility.spec.ts -g "preference choices save|preference dialog traps|preferences dialog meets" --workers=1` | Passed after the preference form refinement: 9 tests across mobile, tablet, and desktop, including preference persistence, dialog keyboard behavior, and axe checks. |
 | `npm audit --json` | Passed: zero reported vulnerabilities across 487 dependency entries. |
 
 ## Coverage and determinism

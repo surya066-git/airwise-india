@@ -117,6 +117,22 @@ test("preference dialog traps keyboard focus and restores it on close", async ({
   await expect(personalize).toBeFocused();
 });
 
+test("preference choices save the selected values", async ({ page }) => {
+  await page.goto("/");
+  await openMobileMenuIfNeeded(page);
+  await page.getByRole("button", { name: "Personalize" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Make the advice fit" });
+  await dialog.getByLabel("Usual commute").selectOption({ label: "Walk or cycle" });
+  await dialog.getByLabel("Outdoor activity").selectOption({ label: "Most days" });
+  await dialog.getByRole("button", { name: "Save preferences" }).click();
+
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("airwise-profile") ?? "null"))).toMatchObject({
+    commute: "Walk or cycle",
+    outdoorActivity: "Most days"
+  });
+});
+
 test("dashboard still loads when browser storage is blocked", async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(window, "localStorage", {

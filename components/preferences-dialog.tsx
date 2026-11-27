@@ -2,8 +2,23 @@
 
 import { ArrowRight, Check, Users, X } from "lucide-react";
 import { FormEvent, useRef, useState } from "react";
-import { DEFAULT_PREFERENCES, type UserPreferences } from "@/types/preferences";
+import {
+  AGE_GROUP_OPTIONS,
+  COMMUTE_OPTIONS,
+  DEFAULT_PREFERENCES,
+  OCCUPATION_OPTIONS,
+  OUTDOOR_ACTIVITY_OPTIONS,
+  type UserPreferences
+} from "@/types/preferences";
 import { useDialogFocus } from "@/components/use-dialog-focus";
+
+function selectOption<const Options extends readonly string[]>(
+  options: Options,
+  value: string,
+  fallback: Options[number]
+): Options[number] {
+  return options.find((option) => option === value) ?? fallback;
+}
 
 export default function PreferencesDialog({
   initial, onClose, onSave
@@ -37,23 +52,23 @@ export default function PreferencesDialog({
         <form className="dialog-form" onSubmit={submit}>
           <div className="profile-fields">
             <label>Age group
-              <select value={value.ageGroup} onChange={(event) => setValue({ ...value, ageGroup: event.target.value as UserPreferences["ageGroup"] })}>
-                {["Prefer not to say", "Under 18", "18-59", "60+"].map((item) => <option key={item}>{item}</option>)}
+              <select value={value.ageGroup} onChange={(event) => setValue({ ...value, ageGroup: selectOption(AGE_GROUP_OPTIONS, event.target.value, value.ageGroup) })}>
+                {AGE_GROUP_OPTIONS.map((item) => <option key={item}>{item}</option>)}
               </select>
             </label>
             <label>Occupation
-              <select value={value.occupation} onChange={(event) => setValue({ ...value, occupation: event.target.value as UserPreferences["occupation"] })}>
-                {["Resident", "Student", "Office worker", "Outdoor worker"].map((item) => <option key={item}>{item}</option>)}
+              <select value={value.occupation} onChange={(event) => setValue({ ...value, occupation: selectOption(OCCUPATION_OPTIONS, event.target.value, value.occupation) })}>
+                {OCCUPATION_OPTIONS.map((item) => <option key={item}>{item}</option>)}
               </select>
             </label>
             <label>Usual commute
-              <select value={value.commute} onChange={(event) => setValue({ ...value, commute: event.target.value as UserPreferences["commute"] })}>
-                {["Not applicable", "Walk or cycle", "Public transit", "Two-wheeler", "Car", "Mixed"].map((item) => <option key={item}>{item}</option>)}
+              <select value={value.commute} onChange={(event) => setValue({ ...value, commute: selectOption(COMMUTE_OPTIONS, event.target.value, value.commute) })}>
+                {COMMUTE_OPTIONS.map((item) => <option key={item}>{item}</option>)}
               </select>
             </label>
             <label>Outdoor activity
-              <select value={value.outdoorActivity} onChange={(event) => setValue({ ...value, outdoorActivity: event.target.value as UserPreferences["outdoorActivity"] })}>
-                {["Rarely", "Sometimes", "Most days"].map((item) => <option key={item}>{item}</option>)}
+              <select value={value.outdoorActivity} onChange={(event) => setValue({ ...value, outdoorActivity: selectOption(OUTDOOR_ACTIVITY_OPTIONS, event.target.value, value.outdoorActivity) })}>
+                {OUTDOOR_ACTIVITY_OPTIONS.map((item) => <option key={item}>{item}</option>)}
               </select>
             </label>
           </div>

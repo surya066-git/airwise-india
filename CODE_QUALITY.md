@@ -25,6 +25,8 @@ This report describes the repository implementation and the local checks run for
 ## TypeScript and maintainability
 
 - `tsconfig.json` enables `strict` mode. `npm run typecheck` first runs `next typegen`, then checks the application and tests; Next.js generated route declarations are ignored rather than committed.
+- TypeScript also checks unused locals and parameters. Preference option tuples now define both the compile-time unions and the UI's select options, so the form and persisted-data validator share one contract.
+- Browser-stored preferences and select changes are narrowed from `unknown`/`string` by runtime checks rather than assertions. Tests cover defaulting, malformed values, old `routine` migration, and saved form selections.
 - The audited source contains no explicit `any`, `@ts-ignore`, `@ts-expect-error`, or lint-disable directives.
 - API inputs and model responses are checked at runtime with Zod and semantic validation; provider payloads remain `unknown` until parsed.
 - Error paths return safe status and guidance rather than stack traces. External fetches use fixed provider origins, explicit timeouts, bounded retries, and circuit breakers.

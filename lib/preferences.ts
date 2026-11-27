@@ -1,36 +1,54 @@
-import { DEFAULT_PREFERENCES, type UserPreferences } from "@/types/preferences";
+import {
+  AGE_GROUP_OPTIONS,
+  COMMUTE_OPTIONS,
+  DEFAULT_PREFERENCES,
+  OCCUPATION_OPTIONS,
+  OUTDOOR_ACTIVITY_OPTIONS,
+  type UserPreferences
+} from "@/types/preferences";
 
 const allowedKeys = new Set([
   "ageGroup", "occupation", "commute", "outdoorActivity", "children", "olderAdults"
 ]);
-const ageGroups = new Set(["Prefer not to say", "Under 18", "18-59", "60+"]);
-const occupations = new Set(["Resident", "Student", "Office worker", "Outdoor worker"]);
-const commutes = new Set(["Not applicable", "Walk or cycle", "Public transit", "Two-wheeler", "Car", "Mixed"]);
-const outdoorActivityLevels = new Set(["Rarely", "Sometimes", "Most days"]);
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readOption<const Options extends readonly string[]>(
+  value: unknown,
+  options: Options,
+  fallback: Options[number]
+): Options[number] | null {
+  if (value === undefined) return fallback;
+  return options.find((option) => option === value) ?? null;
+}
+
+function readBoolean(value: unknown, fallback: boolean): boolean | null {
+  if (value === undefined) return fallback;
+  return typeof value === "boolean" ? value : null;
+}
 
 /** Restore only a complete, recognized preference profile; malformed storage resets safely. */
 export function normalizePreferences(value: unknown): UserPreferences {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return DEFAULT_PREFERENCES;
-  const candidate = { ...value } as Record<string, unknown>;
+  if (!isRecord(value)) return DEFAULT_PREFERENCES;
+  const candidate = { ...value };
   if (candidate.occupation === undefined && typeof candidate.routine === "string") {
     candidate.occupation = candidate.routine;
   }
   delete candidate.routine;
 
   if (Object.keys(candidate).some((key) => !allowedKeys.has(key))) return DEFAULT_PREFERENCES;
-  if (candidate.ageGroup !== undefined && !ageGroups.has(candidate.ageGroup as string)) return DEFAULT_PREFERENCES;
-  if (candidate.occupation !== undefined && !occupations.has(candidate.occupation as string)) return DEFAULT_PREFERENCES;
-  if (candidate.commute !== undefined && !commutes.has(candidate.commute as string)) return DEFAULT_PREFERENCES;
-  if (candidate.outdoorActivity !== undefined && !outdoorActivityLevels.has(candidate.outdoorActivity as string)) return DEFAULT_PREFERENCES;
-  if (candidate.children !== undefined && typeof candidate.children !== "boolean") return DEFAULT_PREFERENCES;
-  if (candidate.olderAdults !== undefined && typeof candidate.olderAdults !== "boolean") return DEFAULT_PREFERENCES;
 
-  return {
-    ageGroup: candidate.ageGroup as UserPreferences["ageGroup"] | undefined ?? DEFAULT_PREFERENCES.ageGroup,
-    occupation: candidate.occupation as UserPreferences["occupation"] | undefined ?? DEFAULT_PREFERENCES.occupation,
-    commute: candidate.commute as UserPreferences["commute"] | undefined ?? DEFAULT_PREFERENCES.commute,
-    outdoorActivity: candidate.outdoorActivity as UserPreferences["outdoorActivity"] | undefined ?? DEFAULT_PREFERENCES.outdoorActivity,
-    children: candidate.children as boolean | undefined ?? DEFAULT_PREFERENCES.children,
-    olderAdults: candidate.olderAdults as boolean | undefined ?? DEFAULT_PREFERENCES.olderAdults
-  };
+  const ageGroup = readOption(candidate.ageGroup, AGE_GROUP_OPTIONS, DEFAULT_PREFERENCES.ageGroup);
+  const occupation = readOption(candidate.occupation, OCCUPATION_OPTIONS, DEFAULT_PREFERENCES.occupation);
+  const commute = readOption(candidate.commute, COMMUTE_OPTIONS, DEFAULT_PREFERENCES.commute);
+  const outdoorActivity = readOption(candidate.outdoorActivity, OUTDOOR_ACTIVITY_OPTIONS, DEFAULT_PREFERENCES.outdoorActivity);
+  const children = readBoolean(candidate.children, DEFAULT_PREFERENCES.children);
+  const olderAdults = readBoolean(candidate.olderAdults, DEFAULT_PREFERENCES.olderAdults);
+
+  if (ageGroup === null || occupation === null || commute === null || outdoorActivity === null || children === null || olderAdults === null) {
+    return DEFAULT_PREFERENCES;
+  }
+
+  return { ageGroup, occupation, commute, outdoorActivity, children, olderAdults };
 }

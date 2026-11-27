@@ -611,3 +611,9 @@ The AI assistant was used to turn the provided product brief into a runnable Nex
 - Typecheck (`next typegen` plus `tsc`), lint, 172 unit tests, npm dependency audit, and the final production build passed. `npm audit` reported zero vulnerabilities.
 - The complete E2E run passed all 72 tests across mobile, tablet, and desktop in 11.2 minutes. This includes all nine axe scans with zero violations and the blocked-storage and out-of-order response regressions at each viewport.
 - Browser E2E used the offline server guard. No live CPCB, OpenAQ, or AI provider request was made. At the user's request, commit `92e405f` was pushed to `main`; GitHub's Vercel status reported deployment complete. The production homepage and provider-health route both returned HTTP 200, and the homepage contains the new cleaning guidance. No production AQI or AI request was made. Full evidence is in `VERCEL_DEPLOYMENT.md`.
+
+### Follow-up quality pass — shared preference contract
+
+- Derived preference union types from shared readonly option lists and reused those lists in the preferences dialog and persisted-profile validator.
+- Replaced preference storage and select-value assertions with runtime narrowing. Expanded malformed-profile and legacy-migration cases, and added a browser check for saving selected values.
+- Enabled TypeScript unused-local and unused-parameter checks. Typecheck, lint, all 183 unit tests, the production build, and nine focused browser/accessibility checks across mobile, tablet, and desktop passed. No live providers were called; deployment verification will be recorded after the requested update is pushed.
