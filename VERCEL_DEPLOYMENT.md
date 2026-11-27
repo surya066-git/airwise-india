@@ -2,9 +2,9 @@
 
 ## Status
 
-### Latest deployment — 27 November 2026
+### Latest application-code deployment — 27 November 2026
 
-Commit `92e405f` was pushed to `main`. GitHub's Vercel commit status reported **Deployment has completed**. The production alias [airwise-india-one.vercel.app](https://airwise-india-one.vercel.app/) returned HTTP 200, and its rendered homepage contained the newly added damp-dusting/wet-mopping recommendation. `GET /api/health/providers` returned HTTP 200 with `Cache-Control: no-store`; its response contained four provider entries and no credential-named fields. These checks verified the deployment and safe health projection without calling CPCB, OpenAQ, or an AI provider. The Vercel CLI and dashboard credentials remain unavailable, so project settings and detailed function logs were not inspected.
+Commit `ba7b141` was pushed to `main`, and GitHub's Vercel status reported **Deployment has completed**. The production alias [airwise-india-one.vercel.app](https://airwise-india-one.vercel.app/) returned HTTP 200 with the expected canonical origin. `GET /api/health/providers` returned HTTP 200 and reported four provider entries; no credential-named fields were present. These read-only checks verified the deployment and safe health projection without calling CPCB, OpenAQ, or an AI provider. The Vercel CLI and dashboard credentials remain unavailable, so project settings and detailed function logs were not inspected.
 
 Historical check on 25 November 2026: the public alias responded over HTTPS. `GET /` and `GET /api/health/providers` returned HTTP 200. In headless Chromium, the dashboard became interactive, accepted Hyderabad in the location dialog, and displayed the unverified AQI response without JavaScript errors. The homepage HTML had an incorrect canonical URL of `http://localhost:3000`; `app/layout.tsx` now uses Vercel's project production domain when `NEXT_PUBLIC_APP_URL` is a local address. That fix was subsequently confirmed in production.
 
